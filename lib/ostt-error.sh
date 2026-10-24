@@ -14,3 +14,16 @@ ostt_error() {
   (( ${#error} > 400 )) && error="${error:0:400}…"
   printf '%s' "$error"
 }
+
+# Runs a command and prints its output, or, if it fails, its error output
+# instead, with its exit status. Keeping the two apart keeps a warning on
+# stderr out of JSON on stdout.
+stdout_or_stderr() {
+  local errors output status
+  errors=$(mktemp) || return 1
+  output=$("$@" 2>"$errors")
+  status=$?
+  if (( status == 0 )); then printf '%s\n' "$output"; else cat "$errors"; fi
+  rm -f "$errors"
+  return "$status"
+}

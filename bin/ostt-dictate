@@ -39,7 +39,8 @@ config_tool() {
 }
 
 notify() {
-  notify-send -a OSTT -i audio-input-microphone "$1" "$2" 2>/dev/null || true
+  # A hung notification daemon must not hold up dictation.
+  timeout 2 notify-send -a OSTT -i audio-input-microphone "$1" "$2" 2>/dev/null || true
 }
 
 fail() {
@@ -71,8 +72,9 @@ state() {
 }
 
 # Press and release of a hold key arrive almost together; take turns. The
-# wait is longer than start can take (its steps' time limits add up to 16
-# seconds), so a release is never lost while the recording goes on.
+# wait is longer than start can take (its steps' time limits, a notification
+# included, add up to 18 seconds), so a release is never lost while the
+# recording goes on.
 lock() {
   exec 8>"$dir/lock"
   flock -w 20 8 || fail "Dictation is busy; try again."
@@ -95,7 +97,7 @@ pick_action() {
   fi
   action=$(jq -r '.action // empty' <<<"$app")
   [[ $action ]] || return 0
-  if ! actions=$(timeout 3 ostt process list --format json 2>&1); then
+  if ! actions=$(stdout_or_stderr timeout 3 ostt process list --format json); then
     notify "Dictating without context" "$(ostt_error "$actions" "Could not list OSTT's processing actions.")"
     return 0
   fi
@@ -234,7 +236,7 @@ apps() {
     error=${mapped:-Could not read $config.}
     mapped='{}'
   fi
-  if ! actions=$(timeout 3 ostt process list --format json 2>&1); then
+  if ! actions=$(stdout_or_stderr timeout 3 ostt process list --format json); then
     [[ $error ]] || error=$(ostt_error "$actions" "Could not list OSTT's processing actions.")
     actions='[]'
   fi

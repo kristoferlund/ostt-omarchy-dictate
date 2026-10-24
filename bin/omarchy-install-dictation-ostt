@@ -73,7 +73,7 @@ fill_action() {
 setup_context() {
   local agents actions status missing=() existing=() tool name path models model candidate target id added
   # Agents come from OSTT, which knows how to run each one with its tools off.
-  agents=$(ostt agent list --format json 2>&1)
+  agents=$(stdout_or_stderr ostt agent list --format json)
   status=$?
   if (( status == 2 )); then
     step "Context-aware dictation needs a newer OSTT, so it was skipped. Update OSTT and run this setup again to add it."
@@ -82,7 +82,7 @@ setup_context() {
     step "Context-aware dictation was not set up: $(ostt_error "$agents" "OSTT could not list its agents.")"
     return 0
   fi
-  if ! actions=$(ostt process list --format json 2>&1); then
+  if ! actions=$(stdout_or_stderr ostt process list --format json); then
     step "Context-aware dictation was not set up: $(ostt_error "$actions" "OSTT could not read $shown_config.")"
     return 0
   fi
@@ -118,7 +118,7 @@ setup_context() {
   path=$(jq -r --arg id "$tool" '.[] | select(.id == $id) | .path' <<<"$agents")
   echo
 
-  if ! models=$(ostt agent models "$tool" 2>&1); then
+  if ! models=$(stdout_or_stderr ostt agent models "$tool"); then
     say "Could not list $name's models: $(ostt_error "$models")"
     models=""
   fi

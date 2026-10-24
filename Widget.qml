@@ -10,7 +10,8 @@ import qs.Ui
 // abandons a recording. Status comes from `ostt-dictate status --follow`,
 // which prints a JSON line whenever the state changes.
 //
-// Until the plugin's install has run, the widget offers to set it up.
+// Until the plugin's setup has installed ostt-dictate and OSTT, the widget
+// offers to run it.
 //
 // Right-click while idle opens a card listing the apps on the visible
 // workspaces (and any already set up) with their current settings. Clicking a
@@ -24,7 +25,8 @@ Panel {
 
   // idle | recording | transcribing | error, or "" while OSTT is unavailable.
   property string phase: ""
-  // ostt-dictate is not on PATH: the plugin's install has not run yet.
+  // ostt-dictate or ostt is not on PATH: the setup has not run, or stopped
+  // before installing OSTT.
   property bool needsSetup: false
   property string errorText: ""
   // An error is shown prominently for a while, then the widget calms down;
@@ -69,7 +71,6 @@ Panel {
       return
     }
     var previous = root.phase
-    root.needsSetup = false
     root.phase = String(status.state || "idle")
     root.errorText = String(status.error || "")
     if (root.phase === "error" && previous !== "error" && previous !== "") {
@@ -88,6 +89,9 @@ Panel {
   // terminal, as Setup > Defaults > Dictation runs a backend's setup. The
   // launcher runs its argument through bash, hence the quoting.
   function setUp() {
+    // One terminal per click is enough; a second setup would wait on the first.
+    if (setupLaunched.running) return
+    setupLaunched.restart()
     var install = decodeURIComponent(String(Qt.resolvedUrl("install")).replace(/^file:\/\//, ""))
     Util.execArgv(["omarchy-launch-floating-terminal-with-presentation", Util.shellQuote(install)])
   }
@@ -258,8 +262,9 @@ Panel {
     stdout: SplitParser {
       onRead: function(line) { root.apply(line) }
     }
-    onExited: function() {
-      // ostt-dictate missing, or replaced by an update: hide and try again shortly.
+    // Stopped, or never started because ostt-dictate is missing (a failed
+    // start emits no exited): hide and try again shortly.
+    onRunningChanged: if (!running) {
       root.phase = ""
       setupCheck.running = true
       restartTimer.restart()
@@ -268,8 +273,22 @@ Panel {
 
   Process {
     id: setupCheck
-    command: ["sh", "-c", "command -v ostt-dictate"]
+    command: ["sh", "-c", "command -v ostt-dictate && command -v ostt"]
+    running: true
     onExited: function(exitCode) { root.needsSetup = exitCode !== 0 }
+  }
+
+  // While setup is needed, notices when it has been done.
+  Timer {
+    interval: 5000
+    repeat: true
+    running: root.needsSetup
+    onTriggered: setupCheck.running = true
+  }
+
+  Timer {
+    id: setupLaunched
+    interval: 10000
   }
 
   Process {

@@ -36,7 +36,8 @@ terminal, which:
 
 Running `~/.config/omarchy/plugins/ostt.dictation/install` does the same.
 Afterwards OSTT is listed in Setup > Defaults > Dictation; selecting it there
-runs the setup again. On an NVIDIA GPU, `ostt-cuda-bin` is the faster OSTT
+runs the setup again, to finish one you stopped or to change your answers.
+Context-aware dictation needs an OSTT newer than 0.0.30. On an NVIDIA GPU, `ostt-cuda-bin` is the faster OSTT
 build for local models, but it pulls in CUDA (several GB).
 
 `omarchy plugin update ostt.dictation --yes` updates everything (without
@@ -140,6 +141,7 @@ in the notification works.
 
 | State | Icon |
 | --- | --- |
+| Not set up | microphone; click it to run the setup |
 | Idle | dimmed microphone |
 | Recording | microphone in the bar's alert color |
 | Transcribing | hourglass |

@@ -51,5 +51,24 @@ class OsttError(unittest.TestCase):
         self.assertEqual(len(ostt_error("Error: " + "x" * 1000)), 401)
 
 
+def stdout_or_stderr(script):
+    result = subprocess.run(
+        ["bash", "-c", 'source "$0"; stdout_or_stderr bash -c "$1"', LIB, script],
+        capture_output=True, text=True,
+    )
+    return result.returncode, result.stdout
+
+
+class StdoutOrStderr(unittest.TestCase):
+    """JSON from ostt is parsed only when the command worked, and then
+    without the warnings ostt may print on stderr."""
+
+    def test_success_is_stdout_alone(self):
+        self.assertEqual(stdout_or_stderr("echo '[]'; echo warning >&2"), (0, "[]\n"))
+
+    def test_failure_is_stderr_with_the_status(self):
+        self.assertEqual(stdout_or_stderr("echo partial; echo 'Error: bad' >&2; exit 2"), (2, "Error: bad\n"))
+
+
 if __name__ == "__main__":
     unittest.main()
