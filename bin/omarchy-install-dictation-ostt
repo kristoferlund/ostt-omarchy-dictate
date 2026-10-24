@@ -25,6 +25,7 @@ step() {
 }
 
 repo="$(dirname "$(realpath "$0")")/.."
+# shellcheck source=lib/ostt-error.sh
 source "$repo/lib/ostt-error.sh"
 
 config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
@@ -180,11 +181,24 @@ setup_context() {
   done
 }
 
+# The CUDA build is the fastest on NVIDIA, but it needs Arch's cuda 13 (several
+# GB) and a GPU of compute capability 7.5 or newer. Like OSTT's installer, use
+# it only when that toolkit is already installed.
+cuda_fits() {
+  local caps
+  [[ $(pacman -Q cuda 2>/dev/null) =~ ^cuda\ ([0-9]+)\. ]] && (( BASH_REMATCH[1] >= 13 )) || return 1
+  caps=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null) && [[ $caps ]] || return 1
+  awk '$1 < 7.5 { old = 1 } END { exit old }' <<<"$caps"
+}
+
 if omarchy-cmd-missing ostt; then
-  # The prebuilt package, with GPU support where Vulkan works, as Omarchy
-  # installs Voxtype.
+  # A prebuilt package, with GPU support where the hardware has it.
   package=ostt-bin
-  omarchy-hw-vulkan && package=ostt-vulkan-bin
+  if cuda_fits; then
+    package=ostt-cuda-bin
+  elif omarchy-hw-vulkan; then
+    package=ostt-vulkan-bin
+  fi
   if confirm "OSTT is not installed. Install it now ($package from the AUR)?"; then
     omarchy-pkg-aur-add "$package"
   else

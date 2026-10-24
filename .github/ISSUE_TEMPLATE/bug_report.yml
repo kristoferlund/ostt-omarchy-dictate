@@ -1,0 +1,50 @@
+name: Bug report
+description: Something does not work as expected.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. For security issues, use [private vulnerability reporting](https://github.com/kristoferlund/ostt-omarchy-dictate/security/advisories/new) instead.
+        Leave out recordings, transcripts and screenshots with anything private in them.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the problem, what you expected instead, and the steps to reproduce it. Include the notification or the widget's tooltip if there was an error.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where
+      options:
+        - Setup
+        - Plain dictation
+        - Context-aware dictation (processing action or screenshot)
+        - Recording popup
+        - Bar widget or per-app card
+        - Removing the plugin
+        - Something else
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Plugin version (from manifest.json), OSTT version (`ostt --version`), and Omarchy version (`omarchy version`).
+      placeholder: Plugin 0.1.0, OSTT 0.0.31, Omarchy 4.5.0
+    validations:
+      required: true
+  - type: input
+    id: model-agent
+    attributes:
+      label: Model and agent
+      description: The transcription model (`ostt model current`), and for context-aware dictation the agent and the action's id.
+      placeholder: parakeet/parakeet-ultra, Claude Code, ghostwriter
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Output of `ostt-dictate status --json`, and the end of `ostt logs`. Check them for private text first.
+      render: text
