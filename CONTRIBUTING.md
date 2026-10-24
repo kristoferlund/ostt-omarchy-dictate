@@ -43,7 +43,6 @@ Run these before opening a pull request:
 ```bash
 omarchy plugin validate .
 python -m unittest discover -s tests
-bash -n bin/* install uninstall lib/*.sh
 shellcheck -x bin/* install uninstall lib/*.sh
 ```
 
