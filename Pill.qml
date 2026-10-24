@@ -3,8 +3,8 @@ import QtQuick.Shapes
 import qs.Commons
 import qs.Commons as Commons
 
-// The recording pill: cancel on the left, a live level meter, and a green
-// check on the right that stops recording and transcribes. While OSTT
+// The recording pill: cancel on the left, a live level meter, and a check on
+// the right that stops recording and transcribes. While OSTT
 // transcribes, the meter becomes a travelling wave and the check a spinner.
 // Popup.qml feeds it and runs the actions; this file only draws.
 Item {
@@ -19,15 +19,17 @@ Item {
   signal confirmClicked()
 
   readonly property bool recording: phase === "recording"
-  readonly property int bars: 24
-  readonly property int pillHeight: Style.space(48)
-  readonly property int button: Style.space(34)
+  readonly property int bars: 22
+  readonly property int pillHeight: Style.space(32)
+  readonly property int button: Style.space(23)
   readonly property int inset: Math.round((pillHeight - button) / 2)
-  readonly property int gap: Style.space(14)
+  readonly property int gap: Style.space(9)
   readonly property int barWidth: Math.max(2, Style.space(3))
   readonly property int barGap: Math.max(2, Style.space(3))
-  readonly property int meterHeight: Style.space(26)
-  readonly property color green: "#22c55e"
+  readonly property int meterHeight: Style.space(17)
+  // The theme's colors for popups, so the pill looks like Omarchy's own.
+  readonly property color surface: Commons.Color.popups.background
+  readonly property color ink: Commons.Color.popups.text
 
   implicitWidth: card.width
   implicitHeight: card.height
@@ -72,9 +74,9 @@ Item {
     width: pill.inset + pill.button + pill.gap + meter.width + pill.gap + pill.button + pill.inset
     height: pill.pillHeight
     radius: height / 2
-    color: Util.alpha(Commons.Color.background, 0.94)
+    color: pill.surface
     border.width: 1
-    border.color: Util.alpha(Commons.Color.foreground, 0.08)
+    border.color: Util.alpha(pill.ink, 0.08)
 
     // Cancel: discard the recording, or the pending transcription.
     Rectangle {
@@ -84,7 +86,7 @@ Item {
       width: pill.button
       height: width
       radius: width / 2
-      color: Util.alpha(Commons.Color.foreground, cancelArea.containsMouse ? 0.2 : 0.1)
+      color: Util.alpha(pill.ink, cancelArea.containsMouse ? 0.2 : 0.1)
       scale: cancelArea.pressed ? 0.92 : 1
       Behavior on color { ColorAnimation { duration: Style.duration(120) } }
       Behavior on scale { NumberAnimation { duration: Style.duration(90) } }
@@ -98,7 +100,7 @@ Item {
           height: Math.max(2, Style.space(2))
           radius: height / 2
           rotation: modelData
-          color: Commons.Color.foreground
+          color: pill.ink
           antialiasing: true
         }
       }
@@ -130,7 +132,7 @@ Item {
           width: pill.barWidth
           height: Math.max(pill.barWidth, Math.round(pill.meterHeight * level))
           radius: width / 2
-          color: Commons.Color.foreground
+          color: pill.ink
           // Older bars fade a little, so the meter reads left to right.
           opacity: pill.recording ? 0.35 + 0.65 * (index + 1) / pill.bars : 0.6
 
@@ -150,9 +152,7 @@ Item {
       width: pill.button
       height: width
       radius: width / 2
-      color: pill.recording
-        ? Qt.lighter(pill.green, confirmArea.containsMouse ? 1.12 : 1)
-        : Util.alpha(Commons.Color.foreground, 0.1)
+      color: Util.alpha(pill.ink, pill.recording && confirmArea.containsMouse ? 0.2 : 0.1)
       scale: confirmArea.pressed ? 0.92 : 1
       Behavior on color { ColorAnimation { duration: Style.duration(160) } }
       Behavior on scale { NumberAnimation { duration: Style.duration(90) } }
@@ -162,7 +162,7 @@ Item {
         visible: pill.recording
         preferredRendererType: Shape.CurveRenderer
         ShapePath {
-          strokeColor: "white"
+          strokeColor: pill.ink
           strokeWidth: Math.max(2, Style.space(2.5))
           fillColor: "transparent"
           capStyle: ShapePath.RoundCap
@@ -179,7 +179,7 @@ Item {
         rotation: pill.wavePhase * 720
         preferredRendererType: Shape.CurveRenderer
         ShapePath {
-          strokeColor: Commons.Color.foreground
+          strokeColor: pill.ink
           strokeWidth: Math.max(2, Style.space(2.5))
           fillColor: "transparent"
           capStyle: ShapePath.RoundCap

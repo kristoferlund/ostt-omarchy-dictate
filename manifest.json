@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "ostt.dictation",
+  "id": "io.github.kristoferlund.ostt-dictate",
   "name": "OSTT Dictation",
   "version": "0.1.0",
   "author": "Kristofer Lund",
