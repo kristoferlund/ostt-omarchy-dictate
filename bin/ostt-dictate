@@ -52,7 +52,7 @@ fail() {
 # True while the process in the pid file is alive and still the one we started.
 running() {
   local pid
-  pid=$(cat "$1" 2>/dev/null) || return 1
+  read -r pid 2>/dev/null <"$1" || return 1
   [[ $pid =~ ^[0-9]+$ ]] && grep -qa "$2" "/proc/$pid/cmdline" 2>/dev/null
 }
 
@@ -261,17 +261,18 @@ status() {
   done
   while :; do
     current=$(state)
-    if [[ $json ]]; then
-      current=$(jq -cn --arg state "$current" --rawfile error <(cat "$error_file" 2>/dev/null) \
-        '{state: $state} + (if $state == "error" then {error: ($error | rtrimstr("\n"))} else {} end)')
-    fi
     if [[ $current != "$last" ]]; then
+      last=$current
+      if [[ $json ]]; then
+        current=$(jq -cn --arg state "$current" --rawfile error <(cat "$error_file" 2>/dev/null) \
+          '{state: $state} + (if $state == "error" then {error: ($error | rtrimstr("\n"))} else {} end)')
+      fi
       # Exit once the reader (a bar widget) goes away.
       printf '%s\n' "$current" || exit 0
-      last=$current
     fi
     [[ $follow ]] || return 0
-    sleep 0.2
+    # Quick while dictating, so the popup closes as soon as the text is in.
+    if [[ $last == recording || $last == transcribing ]]; then sleep 0.05; else sleep 0.2; fi
   done
 }
 
