@@ -40,11 +40,13 @@ terminal, which:
 Running `~/.config/omarchy/plugins/io.github.kristoferlund.ostt-dictate/install` does the same.
 Afterwards OSTT is listed in Setup > Defaults > Dictation; selecting it there
 runs the setup again, to finish one you stopped or to change your answers.
-Context-aware dictation needs an OSTT newer than 0.0.30. On an NVIDIA GPU, `ostt-cuda-bin` is the faster OSTT
+Context-aware dictation needs OSTT 0.0.31 or later. On an NVIDIA GPU, `ostt-cuda-bin` is the faster OSTT
 build for local models, but it pulls in CUDA (several GB).
 
 `omarchy plugin update io.github.kristoferlund.ostt-dictate --yes` updates everything (without
-`--yes`, Omarchy shows the code changes and asks first).
+`--yes`, Omarchy shows the code changes and asks first). The bar widget and
+the recording popup keep their old version until the shell restarts: run
+`omarchy restart shell`, or log out and back in.
 
 ## Remove
 
