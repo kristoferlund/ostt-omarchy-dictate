@@ -191,18 +191,38 @@ cuda_fits() {
   awk '$1 < 7.5 { old = 1 } END { exit old }' <<<"$caps"
 }
 
+# A prebuilt package, with GPU support where the hardware has it.
+package=ostt-bin
+if cuda_fits; then
+  package=ostt-cuda-bin
+elif omarchy-hw-vulkan; then
+  package=ostt-vulkan-bin
+fi
+
 if omarchy-cmd-missing ostt; then
-  # A prebuilt package, with GPU support where the hardware has it.
-  package=ostt-bin
-  if cuda_fits; then
-    package=ostt-cuda-bin
-  elif omarchy-hw-vulkan; then
-    package=ostt-vulkan-bin
-  fi
   if confirm "OSTT is not installed. Install it now ($package from the AUR)?"; then
     omarchy-pkg-aur-add "$package"
   else
     exit 0
+  fi
+else
+  # OSTT before 0.0.31 has no agents, which context-aware dictation needs:
+  # `ostt agent` is a usage error (2) there.
+  status=0
+  ostt agent list >/dev/null 2>&1 || status=$?
+  if (( status == 2 )); then
+    version=$(ostt --version 2>/dev/null)
+    if pacman -Qqo "$(command -v ostt)" >/dev/null 2>&1; then
+      step "Your OSTT (${version#ostt }) is older than 0.0.31, which context-aware dictation needs. Run 'omarchy update' to update it, then run this setup again to add context-aware dictation."
+    # A package's ostt comes before ~/.local/bin, where OSTT's install script
+    # puts it, on the session's PATH, so the package takes over.
+    elif confirm "Your OSTT (${version#ostt }, from OSTT's install script) is older than 0.0.31, which context-aware dictation needs. Install $package from the AUR instead? It takes over from this one and updates with Omarchy."; then
+      omarchy-pkg-aur-add "$package"
+      hash -r
+    else
+      step "Context-aware dictation needs OSTT 0.0.31 or later. To add it later, run OSTT's install script again to update OSTT, then run this setup again."
+    fi
+    echo
   fi
 fi
 
