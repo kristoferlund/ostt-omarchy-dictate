@@ -14,6 +14,8 @@ shortcuts="$config_home/ostt/shortcuts.lua"
 menu="$HOME/.config/omarchy/extensions/omarchy-menu.jsonc"
 begin="// ostt-omarchy-dictate:begin"
 end="// ostt-omarchy-dictate:end"
+# Single quotes: the menu runs the $(...) in "checked" itself.
+# shellcheck disable=SC2016
 entry='"setup.default.dictation.ostt": {"icon":"󰍬","label":"OSTT","checked":"[[ \"$(omarchy-default-dictation)\" == \"ostt\" ]]","action":"omarchy-default-dictation ostt"},'
 
 if ! command -v omarchy-dictation-use >/dev/null; then

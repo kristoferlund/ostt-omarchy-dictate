@@ -224,7 +224,7 @@ Run the checks before opening a pull request:
 ```bash
 omarchy plugin validate .
 python -m unittest discover -s tests
-shellcheck bin/* install uninstall lib/*.sh
+shellcheck -x bin/* install uninstall lib/*.sh
 ```
 
 ## Contributing

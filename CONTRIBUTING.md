@@ -44,7 +44,7 @@ Run these before opening a pull request:
 omarchy plugin validate .
 python -m unittest discover -s tests
 bash -n bin/* install uninstall lib/*.sh
-shellcheck bin/* install uninstall lib/*.sh
+shellcheck -x bin/* install uninstall lib/*.sh
 ```
 
 CI runs the tests, the shell checks and a manifest check on every pull request.
