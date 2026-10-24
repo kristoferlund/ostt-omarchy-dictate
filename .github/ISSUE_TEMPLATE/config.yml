@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/kristoferlund/ostt-omarchy-dictate/security/advisories/new
+    about: Report security issues privately instead of in a public issue.
+  - name: Problems with transcription, models or agents
+    url: https://github.com/kristoferlund/ostt/issues
+    about: Problems that also happen with the ostt command itself belong in OSTT.
+  - name: Documentation
+    url: https://ostt.ai/guide/platforms/omarchy-dictation
+    about: Setup, keys and context-aware dictation.

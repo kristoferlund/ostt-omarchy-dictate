@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Install dependencies
+        run: pacman -Syu --noconfirm --needed git jq python shellcheck
+
+      - uses: actions/checkout@v7
+
+      - name: Check manifest
+        run: |
+          jq -e '.version | test("^[0-9]+\\.[0-9]+\\.[0-9]+$")' manifest.json
+          for file in $(jq -r '.entryPoints[]' manifest.json); do
+            test -f "$file" || { echo "Missing entry point: $file"; exit 1; }
+          done
+
+      - name: Check shell scripts
+        run: |
+          for file in bin/* install uninstall lib/*.sh; do bash -n "$file"; done
+          shellcheck bin/* install uninstall lib/*.sh
+
+      - name: Run tests
+        run: python -m unittest discover -s tests -v

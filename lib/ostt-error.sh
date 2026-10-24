@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Sourced by the bin scripts.
 
 # The error in ostt's stderr ($1): from its "Error: " line on, without the
