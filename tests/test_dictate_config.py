@@ -9,7 +9,7 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "lib"))
 import dictate_config as dc  # noqa: E402
 
-ENTRY = {"action": "assistant", "screenshot": True}
+ENTRY = {"action": "ghostwriter", "screenshot": True}
 
 
 class Edit(unittest.TestCase):
@@ -22,12 +22,12 @@ class Edit(unittest.TestCase):
         self.assertEqual(
             result,
             '# mine\n[apps] # apps\n"foot" = { action = "clean" }\n'
-            '"Slack" = { action = "assistant", screenshot = true }\n\n[other]\nk = 1\n',
+            '"Slack" = { action = "ghostwriter", screenshot = true }\n\n[other]\nk = 1\n',
         )
 
     def test_replaces_and_removes_an_entry(self):
         text = '[apps]\n"Slack" = { action = "clean" }\n'
-        self.assertIn('"Slack" = { action = "assistant", screenshot = true }', dc.edit(text, "Slack", ENTRY))
+        self.assertIn('"Slack" = { action = "ghostwriter", screenshot = true }', dc.edit(text, "Slack", ENTRY))
         self.assertEqual(dc.edit(text, "Slack", None), "[apps]\n")
 
     def test_keeps_crlf_line_endings(self):
@@ -43,7 +43,7 @@ class Edit(unittest.TestCase):
     def test_creates_the_table_in_an_empty_file(self):
         self.assertEqual(
             dc.edit("", "Slack", ENTRY),
-            '[apps]\n"Slack" = { action = "assistant", screenshot = true }\n',
+            '[apps]\n"Slack" = { action = "ghostwriter", screenshot = true }\n',
         )
 
     def test_refuses_an_edit_that_would_change_anything_else(self):
@@ -70,7 +70,7 @@ class Read(unittest.TestCase):
             f.write(text)
 
     def test_a_malformed_entry_affects_only_its_app(self):
-        self.write('[apps]\nSlack = { action = "assistant", screenshot = true }\nOld = "assistant"\n')
+        self.write('[apps]\nSlack = { action = "ghostwriter", screenshot = true }\nOld = "ghostwriter"\n')
         self.assertEqual(dc.apps(self.path), {"apps": {"Slack": ENTRY}, "invalid": ["Old"]})
         self.assertEqual(dc.lookup(self.path, "Slack"), ENTRY)
         self.assertEqual(dc.lookup(self.path, "Firefox"), {})
@@ -87,7 +87,7 @@ class Read(unittest.TestCase):
     def test_map_writes_atomically_and_keeps_the_mode(self):
         self.write('[apps]\n')
         os.chmod(self.path, 0o640)
-        dc.map_app(self.path, "Slack", "assistant", True)
+        dc.map_app(self.path, "Slack", "ghostwriter", True)
         with open(self.path, "rb") as f:
             self.assertEqual(tomllib.load(f)["apps"]["Slack"], ENTRY)
         self.assertEqual(os.stat(self.path).st_mode & 0o777, 0o640)

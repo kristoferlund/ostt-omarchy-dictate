@@ -48,7 +48,7 @@ write_plugin_config() {
 # of open windows; web apps have long generated ones (chrome-...).
 # Apps not listed get plain transcription.
 [apps]
-# "Slack" = { action = "assistant", screenshot = true }
+# "Slack" = { action = "ghostwriter", screenshot = true }
 EOF
 }
 
@@ -66,7 +66,7 @@ fill_action() {
   printf '%s\n' "$text"
 }
 
-# Offers context-aware dictation until it is set up: adds the assistant and
+# Offers context-aware dictation until it is set up: adds the ghostwriter and
 # clean processing actions that ostt.toml lacks, and writes dictate.toml.
 # Never stops the rest of the setup: it is called in a condition, and each step
 # checks for failure.
@@ -86,7 +86,7 @@ setup_context() {
     step "Context-aware dictation was not set up: $(ostt_error "$actions" "OSTT could not read $shown_config.")"
     return 0
   fi
-  for id in assistant clean; do
+  for id in ghostwriter clean; do
     if jq -e --arg id "$id" 'any(.[]; .id == $id)' <<<"$actions" >/dev/null; then
       existing+=("$id")
     else
@@ -102,7 +102,7 @@ setup_context() {
     return 0
   fi
 
-  step "Context-aware dictation lets you choose what happens to your words in each app. An AI agent can tidy them up (Text cleanup), or also carry out spoken instructions such as \"reply saying I can't make it\" (Writing assistant). You can let it see a screenshot of the app's window too, so it gets names and terms on screen right. Every other app keeps plain transcription."
+  step "Context-aware dictation lets you choose what happens to your words in each app. An AI agent can tidy them up (Text cleanup), or also carry out spoken instructions such as \"reply saying I can't make it\" (Ghostwriter). You can let it see a screenshot of the app's window too, so it gets names and terms on screen right. Every other app keeps plain transcription."
   echo
   confirm "Set up context-aware dictation?" || return 0
 

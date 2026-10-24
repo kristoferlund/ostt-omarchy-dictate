@@ -15,7 +15,7 @@ import sys
 import tempfile
 import tomllib
 
-EXAMPLE = '{ action = "assistant", screenshot = true }'
+EXAMPLE = '{ action = "ghostwriter", screenshot = true }'
 
 
 class ConfigError(Exception):

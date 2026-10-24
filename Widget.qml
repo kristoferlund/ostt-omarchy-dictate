@@ -21,7 +21,7 @@ import qs.Ui
 // Space acts, Esc collapses and then closes.
 Panel {
   id: root
-  moduleName: "ostt.dictation"
+  moduleName: "io.github.kristoferlund.ostt-dictate"
 
   // idle | recording | transcribing | error, or "" while OSTT is unavailable.
   property string phase: ""

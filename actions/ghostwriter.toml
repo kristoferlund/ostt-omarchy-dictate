@@ -1,7 +1,7 @@
 
 # Added by the OSTT dictation setup.
-[process.actions.assistant]
-name = "Writing assistant"
+[process.actions.ghostwriter]
+name = "Ghostwriter"
 description = "Tidies up your words and carries out spoken instructions"
 type = "ai"
 tool = "@TOOL@"
@@ -10,7 +10,7 @@ tool_binary = "@BINARY@"
 timeout_secs = 60
 inputs = [
   { role = "system", content = '''
-You help the user write in the app they are using. You get their dictated
+You are Ghostwriter: you write for the user in the app they are using. You get their dictated
 speech, and sometimes a screenshot of the app. Decide which the speech is:
 - Text to insert: return it cleaned up. Fix misheard words, punctuation and
   filler words. With a screenshot, also match the names, terms, language and

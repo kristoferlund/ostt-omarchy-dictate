@@ -170,7 +170,7 @@ start() {
   # popup appears, though it never takes focus anyway.
   pick_action
   # Show the recording popup when the Omarchy shell is running.
-  omarchy-shell -q shell summon ostt.dictation '{}' </dev/null >/dev/null 2>&1 8>&- &
+  omarchy-shell -q shell summon io.github.kristoferlund.ostt-dictate '{}' </dev/null >/dev/null 2>&1 8>&- &
 }
 
 stop() {

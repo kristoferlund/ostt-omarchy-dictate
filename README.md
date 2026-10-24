@@ -37,26 +37,26 @@ terminal, which:
 - offers context-aware dictation (below);
 - makes OSTT Omarchy's dictation backend.
 
-Running `~/.config/omarchy/plugins/ostt.dictation/install` does the same.
+Running `~/.config/omarchy/plugins/io.github.kristoferlund.ostt-dictate/install` does the same.
 Afterwards OSTT is listed in Setup > Defaults > Dictation; selecting it there
 runs the setup again, to finish one you stopped or to change your answers.
 Context-aware dictation needs an OSTT newer than 0.0.30. On an NVIDIA GPU, `ostt-cuda-bin` is the faster OSTT
 build for local models, but it pulls in CUDA (several GB).
 
-`omarchy plugin update ostt.dictation --yes` updates everything (without
+`omarchy plugin update io.github.kristoferlund.ostt-dictate --yes` updates everything (without
 `--yes`, Omarchy shows the code changes and asks first).
 
 ## Remove
 
 ```bash
-~/.config/omarchy/plugins/ostt.dictation/uninstall
-omarchy plugin remove ostt.dictation
+~/.config/omarchy/plugins/io.github.kristoferlund.ostt-dictate/uninstall
+omarchy plugin remove io.github.kristoferlund.ostt-dictate
 ```
 
 `uninstall` switches dictation away from OSTT and removes the scripts. OSTT
 itself stays installed (remove it with `omarchy pkg remove ostt-bin`, or the
 package you have), and so do `~/.config/ostt/dictate.toml` and the
-`assistant` and `clean` actions in `ostt.toml`.
+`ghostwriter` and `clean` actions in `ostt.toml`.
 
 ## Keys
 
@@ -93,7 +93,7 @@ The setup offers it and adds two processing actions to
 `~/.config/ostt/ostt.toml`, using the agent and model you pick; edit their
 prompts there:
 
-- **Writing assistant** (`assistant`) tidies up your words and carries out
+- **Ghostwriter** (`ghostwriter`) tidies up your words and carries out
   spoken instructions. With the screenshot on, it also matches names, terms
   and tone on screen.
 - **Text cleanup** (`clean`) only fixes misheard words, punctuation and
@@ -116,7 +116,7 @@ edit by hand (`screenshot` defaults to `false`):
 
 ```toml
 [apps]
-"Slack" = { action = "assistant", screenshot = true }
+"Slack" = { action = "ghostwriter", screenshot = true }
 "thunderbird" = { action = "my-own-action" }
 ```
 
