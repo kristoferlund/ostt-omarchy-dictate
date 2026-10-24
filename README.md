@@ -4,6 +4,9 @@ Use [OSTT](https://ostt.ai) as the dictation backend in Omarchy 4.5 or later.
 Hold Right Alt or F9 and speak; OSTT transcribes with the model you chose,
 local or cloud, and pastes into the focused app.
 
+The [docs](https://ostt.ai/guide/platforms/omarchy-dictation) cover the setup
+and context-aware dictation.
+
 This repo has these parts:
 
 - `ostt-dictate` records from the default microphone without a terminal and
