@@ -3,8 +3,8 @@ import QtQuick.Shapes
 import qs.Commons
 import qs.Commons as Commons
 
-// The recording pill: cancel on the left, a live level meter, and a check in
-// the theme's accent on the right that stops recording and transcribes. While OSTT
+// The recording pill: cancel on the left, a live level meter, and a check on
+// the right that stops recording and transcribes. While OSTT
 // transcribes, the meter becomes a travelling wave and the check a spinner.
 // Popup.qml feeds it and runs the actions; this file only draws.
 Item {
@@ -76,7 +76,7 @@ Item {
     radius: height / 2
     color: pill.surface
     border.width: 1
-    border.color: Commons.Color.popups.border
+    border.color: Util.alpha(pill.ink, 0.08)
 
     // Cancel: discard the recording, or the pending transcription.
     Rectangle {
@@ -152,9 +152,7 @@ Item {
       width: pill.button
       height: width
       radius: width / 2
-      color: pill.recording
-        ? Qt.lighter(Commons.Color.accent, confirmArea.containsMouse ? 1.12 : 1)
-        : Util.alpha(pill.ink, 0.1)
+      color: Util.alpha(pill.ink, pill.recording && confirmArea.containsMouse ? 0.2 : 0.1)
       scale: confirmArea.pressed ? 0.92 : 1
       Behavior on color { ColorAnimation { duration: Style.duration(160) } }
       Behavior on scale { NumberAnimation { duration: Style.duration(90) } }
@@ -164,8 +162,7 @@ Item {
         visible: pill.recording
         preferredRendererType: Shape.CurveRenderer
         ShapePath {
-          // The pill's background color reads on any accent.
-          strokeColor: pill.surface
+          strokeColor: pill.ink
           strokeWidth: Math.max(2, Style.space(2.5))
           fillColor: "transparent"
           capStyle: ShapePath.RoundCap
