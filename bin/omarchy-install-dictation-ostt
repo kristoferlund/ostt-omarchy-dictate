@@ -71,18 +71,7 @@ fill_action() {
 # Never stops the rest of the setup: it is called in a condition, and each step
 # checks for failure.
 setup_context() {
-  local agents status missing=() existing=() tool name path models model candidate target id added
-  for id in assistant clean; do
-    if has_action "$id"; then existing+=("$id"); else missing+=("$id"); fi
-  done
-  if (( ${#missing[@]} == 0 )); then
-    write_plugin_config
-    return 0
-  fi
-  if [[ ! -f $ostt_config ]]; then
-    step "Context-aware dictation was skipped: $shown_config does not exist yet. Run this setup again once OSTT has created it."
-    return 0
-  fi
+  local agents actions status missing=() existing=() tool name path models model candidate target id added
   # Agents come from OSTT, which knows how to run each one with its tools off.
   agents=$(ostt agent list --format json 2>&1)
   status=$?
@@ -91,6 +80,25 @@ setup_context() {
     return 0
   elif (( status != 0 )); then
     step "Context-aware dictation was not set up: $(ostt_error "$agents" "OSTT could not list its agents.")"
+    return 0
+  fi
+  if ! actions=$(ostt process list --format json 2>&1); then
+    step "Context-aware dictation was not set up: $(ostt_error "$actions" "OSTT could not read $shown_config.")"
+    return 0
+  fi
+  for id in assistant clean; do
+    if jq -e --arg id "$id" 'any(.[]; .id == $id)' <<<"$actions" >/dev/null; then
+      existing+=("$id")
+    else
+      missing+=("$id")
+    fi
+  done
+  if (( ${#missing[@]} == 0 )); then
+    write_plugin_config
+    return 0
+  fi
+  if [[ ! -f $ostt_config ]]; then
+    step "Context-aware dictation was skipped: $shown_config does not exist yet. Run this setup again once OSTT has created it."
     return 0
   fi
 
@@ -124,12 +132,6 @@ setup_context() {
   fi
   if [[ ! $model =~ ^[A-Za-z0-9._:/@-]+$ ]]; then
     say "That is not a valid model name, so context-aware dictation was not set up."
-    return 0
-  fi
-
-  # ostt-dictate takes the screenshot with grim.
-  if ! omarchy-pkg-add grim; then
-    step "Could not install grim, so context-aware dictation was not set up."
     return 0
   fi
 
@@ -172,23 +174,27 @@ setup_context() {
     '[.[] | select(.id as $id | $ARGS.positional | index($id)) | .name] | join(" and ")' "${missing[@]}")
   local them=them
   (( ${#missing[@]} == 1 )) && them=it
-  step "Added $added to $shown_config. To choose the apps that use $them, right-click the microphone in the bar."
+  step "Added $added to $shown_config. To choose the apps that use $them, right-click OSTT's microphone in the bar."
   for id in "${existing[@]}"; do
     say "The setup uses the '$id' action you already had, as it is."
   done
 }
 
 if omarchy-cmd-missing ostt; then
-  if confirm "OSTT is not installed. Install it from the AUR?"; then
-    omarchy-pkg-aur-add ostt
+  # The prebuilt package, with GPU support where Vulkan works, as Omarchy
+  # installs Voxtype.
+  package=ostt-bin
+  omarchy-hw-vulkan && package=ostt-vulkan-bin
+  if confirm "OSTT is not installed. Install it now ($package from the AUR)?"; then
+    omarchy-pkg-aur-add "$package"
   else
     exit 0
   fi
 fi
 
-# ostt-dictate records with ffmpeg and reads its settings with Python; OSTT
-# pastes on Wayland with wtype.
-omarchy-pkg-add ffmpeg python wtype
+# ostt-dictate records with ffmpeg, reads its settings with Python and takes
+# screenshots with grim; OSTT pastes on Wayland with wtype.
+omarchy-pkg-add ffmpeg python wtype grim
 
 if ! ostt model current >/dev/null 2>&1; then
   step "Choose the model OSTT transcribes your speech with. Local models run offline on this computer; cloud models need an API key, which you can add with 'ostt auth login'."

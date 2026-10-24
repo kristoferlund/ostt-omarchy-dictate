@@ -18,19 +18,40 @@ This repo has these parts:
 
 ## Install
 
+Needs Omarchy 4.5 or later.
+
 ```bash
 omarchy plugin add https://github.com/kristoferlund/ostt-omarchy-dictate.git --enable
-~/.config/omarchy/plugins/ostt.dictation/install
 ```
 
-Then select OSTT in Setup > Defaults > Dictation. The setup installs OSTT from
-the AUR if it is missing, asks for a transcription model if none is selected,
-and offers to keep a local model loaded so dictation starts instantly.
+Then click the microphone that appears in the bar. It opens the setup in a
+terminal, which:
+
+- installs OSTT if it is missing (`ostt-vulkan-bin` from the AUR where Vulkan
+  works, `ostt-bin` otherwise), and `ffmpeg`, `python`, `wtype` and `grim`;
+- asks for a transcription model if none is selected, and for a local model
+  offers to keep it loaded so dictation starts instantly;
+- offers context-aware dictation (below);
+- makes OSTT Omarchy's dictation backend.
+
+Running `~/.config/omarchy/plugins/ostt.dictation/install` does the same.
+Afterwards OSTT is listed in Setup > Defaults > Dictation; selecting it there
+runs the setup again. On an NVIDIA GPU, `ostt-cuda-bin` is the faster OSTT
+build for local models, but it pulls in CUDA (several GB).
 
 `omarchy plugin update ostt.dictation --yes` updates everything (without
-`--yes`, Omarchy shows the code changes and asks first). `./uninstall` in the
-same folder switches dictation away from OSTT and removes the scripts; OSTT
-itself stays installed, and so do `~/.config/ostt/dictate.toml` and the
+`--yes`, Omarchy shows the code changes and asks first).
+
+## Remove
+
+```bash
+~/.config/omarchy/plugins/ostt.dictation/uninstall
+omarchy plugin remove ostt.dictation
+```
+
+`uninstall` switches dictation away from OSTT and removes the scripts. OSTT
+itself stays installed (remove it with `omarchy pkg remove ostt-bin`, or the
+package you have), and so do `~/.config/ostt/dictate.toml` and the
 `assistant` and `clean` actions in `ostt.toml`.
 
 ## Keys
@@ -108,8 +129,6 @@ notification says why.
 The agent takes a few seconds, and the text is pasted into whichever window is
 focused when it finishes. Super + Ctrl + Alt + X cancels a dictation that is
 taking too long.
-
-The settings are read with Python, which the setup installs.
 
 The screenshot is a capture of the window's area of the screen, so anything on
 top of it, such as a notification, is included. It is kept in

@@ -2,7 +2,8 @@
 
 # Adds OSTT to Omarchy's dictation backends: links the scripts in bin/ into
 # ~/.local/bin, adds a cancel key, and lists OSTT in Setup > Defaults >
-# Dictation. Selecting it there runs the setup. Safe to run again.
+# Dictation. Then runs the setup, which selecting OSTT there runs too. Safe to
+# run again.
 
 set -e
 
@@ -59,6 +60,8 @@ BEGIN_MARK=$begin END_MARK=$end ENTRY=$entry awk '
   exit 1
 }
 cat "$temporary" >"$menu"
+# exec skips the EXIT trap.
+rm -f "$temporary"
 
 echo "OSTT is now listed in Setup > Defaults > Dictation."
-echo "Select it there, or run: omarchy default dictation ostt"
+exec "$repo/bin/omarchy-install-dictation-ostt"

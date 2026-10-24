@@ -10,6 +10,8 @@ import qs.Ui
 // abandons a recording. Status comes from `ostt-dictate status --follow`,
 // which prints a JSON line whenever the state changes.
 //
+// Until the plugin's install has run, the widget offers to set it up.
+//
 // Right-click while idle opens a card listing the apps on the visible
 // workspaces (and any already set up) with their current settings. Clicking a
 // row expands it in place, as the network panel does, to choose the
@@ -22,6 +24,8 @@ Panel {
 
   // idle | recording | transcribing | error, or "" while OSTT is unavailable.
   property string phase: ""
+  // ostt-dictate is not on PATH: the plugin's install has not run yet.
+  property bool needsSetup: false
   property string errorText: ""
   // An error is shown prominently for a while, then the widget calms down;
   // the next dictation clears it.
@@ -31,9 +35,11 @@ Panel {
   readonly property bool busy: phase === "recording" || phase === "transcribing"
 
   // From `ostt-dictate apps`: [{ class, action, screenshot }] and
-  // [{ id, name, description, images }].
+  // [{ id, name, description, images, error }].
   property var apps: []
   property var actionOptions: []
+  // The first list has arrived; until then the card says it is loading.
+  property bool appsLoaded: false
   property string appsError: ""
   // A change that could not be saved; kept until the next one succeeds, as
   // reloading the list afterwards would otherwise hide it.
@@ -51,7 +57,7 @@ Panel {
   // mouse never scrolls the card under itself.
   property bool cursorFromKeyboard: false
 
-  visible: phase !== "" && !(hideWhenIdle && !busy && !errorFresh)
+  visible: needsSetup || (phase !== "" && !(hideWhenIdle && !busy && !errorFresh))
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
 
@@ -63,6 +69,7 @@ Panel {
       return
     }
     var previous = root.phase
+    root.needsSetup = false
     root.phase = String(status.state || "idle")
     root.errorText = String(status.error || "")
     if (root.phase === "error" && previous !== "error" && previous !== "") {
@@ -77,6 +84,14 @@ Panel {
     if (root.bar) root.bar.run("ostt-dictate " + action)
   }
 
+  // Runs the plugin's install, then the setup, in Omarchy's floating
+  // terminal, as Setup > Defaults > Dictation runs a backend's setup. The
+  // launcher runs its argument through bash, hence the quoting.
+  function setUp() {
+    var install = decodeURIComponent(String(Qt.resolvedUrl("install")).replace(/^file:\/\//, ""))
+    Util.execArgv(["omarchy-launch-floating-terminal-with-presentation", Util.shellQuote(install)])
+  }
+
   function loadApps(text) {
     var data
     try {
@@ -85,7 +100,7 @@ Panel {
       root.appsError = "Could not list apps."
       return
     }
-    var options = [{ value: "", label: "Plain transcription", description: "No processing, your words as heard", images: false }]
+    var options = [{ value: "", label: "Plain transcription", description: "No processing, your words as heard", images: false, error: "" }]
     var actions = data.actions || []
     for (var i = 0; i < actions.length; i++)
       options.push({
@@ -93,11 +108,22 @@ Panel {
         label: String(actions[i].name || actions[i].id),
         description: String(actions[i].description || ""),
         // An OSTT too old to say cannot attach images at all.
-        images: actions[i].images === true
+        images: actions[i].images === true,
+        // Why the action cannot run, e.g. an unknown agent.
+        error: String(actions[i].error || "")
       })
     root.actionOptions = options
-    root.apps = data.apps || []
+    var apps = data.apps || []
+    // An expanded app that has just been set to plain transcription leaves
+    // the list unless it is open; keep it until the card closes.
+    var kept = false
+    for (var j = 0; j < apps.length; j++)
+      if (String(apps[j]["class"]) === root.expandedClass) kept = true
+    if (root.expandedClass !== "" && !kept)
+      apps.push({ "class": root.expandedClass, action: "", screenshot: false })
+    root.apps = apps
     root.appsError = String(data.error || "")
+    root.appsLoaded = true
   }
 
   function setApp(appClass, action, screenshot) {
@@ -112,6 +138,12 @@ Panel {
     for (var i = 0; i < root.actionOptions.length; i++)
       if (root.actionOptions[i].value === action) return root.actionOptions[i].images
     return false
+  }
+
+  function actionError(action) {
+    for (var i = 0; i < root.actionOptions.length; i++)
+      if (root.actionOptions[i].value === action) return root.actionOptions[i].error
+    return ""
   }
 
   function actionLabel(action) {
@@ -130,10 +162,12 @@ Panel {
     root.expandedClass = root.expandedClass === appClass ? "" : appClass
   }
 
+  // An action that cannot run is not offered; the screenshot stays on only
+  // if the new action can use it.
   function chooseAction(appClass, action) {
     var app = root.appByClass(appClass)
-    if (root.changing || !app || app.action === action) return
-    root.setApp(appClass, action, app.screenshot === true)
+    if (root.changing || !app || app.action === action || root.actionError(action) !== "") return
+    root.setApp(appClass, action, app.screenshot === true && root.actionTakesImages(action))
   }
 
   // Only an action that takes images can get a screenshot; one already on can
@@ -227,8 +261,15 @@ Panel {
     onExited: function() {
       // ostt-dictate missing, or replaced by an update: hide and try again shortly.
       root.phase = ""
+      setupCheck.running = true
       restartTimer.restart()
     }
+  }
+
+  Process {
+    id: setupCheck
+    command: ["sh", "-c", "command -v ostt-dictate"]
+    onExited: function(exitCode) { root.needsSetup = exitCode !== 0 }
   }
 
   Process {
@@ -263,6 +304,7 @@ Panel {
     anchors.fill: parent
     bar: root.bar
     text: {
+      if (root.needsSetup) return "󰍬"
       if (root.phase === "transcribing") return "󰔟"
       if (root.phase === "error" && root.errorFresh) return "󰍭"
       return "󰍬"
@@ -270,13 +312,16 @@ Panel {
     active: root.phase === "recording" || (root.phase === "error" && root.errorFresh)
     dimmed: root.phase === "idle" || (root.phase === "error" && !root.errorFresh)
     tooltipText: {
+      if (root.needsSetup) return "OSTT dictation is not set up yet. Click to set it up."
       if (root.phase === "recording") return "OSTT is recording. Click to paste, right-click to cancel."
       if (root.phase === "transcribing") return "OSTT is transcribing. Right-click to cancel."
       if (root.phase === "error") return "OSTT dictation failed:\n" + root.errorText
       return "OSTT dictation. Click to start, right-click to choose actions per app."
     }
     onPressed: function(b) {
-      if (b === Qt.RightButton) {
+      if (root.needsSetup) {
+        root.setUp()
+      } else if (b === Qt.RightButton) {
         if (root.busy) root.run("cancel")
         else root.toggle()
       } else if (b === Qt.LeftButton) {
@@ -328,7 +373,10 @@ Panel {
           PanelHero {
             width: parent.width
             title: "Dictation"
-            meta: root.phase === "error" ? "Last dictation failed: " + root.errorText : "Ready"
+            meta: root.phase === "recording" ? "Recording…"
+              : root.phase === "transcribing" ? "Transcribing…"
+              : root.phase === "error" ? "Last dictation failed: " + root.errorText
+              : "Ready"
             foreground: root.bar.foreground
             fontFamily: root.bar.fontFamily
             // The OSTT wordmark, as in the terminal app; text, so it takes the
@@ -365,6 +413,7 @@ Panel {
               textFormat: Text.PlainText
               readonly property string error: root.mapError !== "" ? root.mapError : root.appsError
               text: error !== "" ? error
+                : !root.appsLoaded ? "Loading…"
                 : root.apps.length === 0 ? "No apps are open on the visible workspaces."
                 : "What dictation does in each app. Apps not listed get plain transcription."
               color: error !== "" ? root.bar.urgent : root.bar.foreground
@@ -561,6 +610,8 @@ Panel {
             required property var modelData
             readonly property string value: String(modelData.value)
             readonly property bool chosen: value === row.action
+            // An action that cannot run is shown with the reason, not offered.
+            readonly property string problem: String(modelData.error || "")
             readonly property string key: root.navKey("option", row.appClass, value)
             width: parent.width
             implicitHeight: optionText.implicitHeight + Style.space(12)
@@ -583,7 +634,7 @@ Panel {
                 textFormat: Text.PlainText
                 text: String(option.modelData.label)
                 color: root.bar.foreground
-                opacity: option.chosen ? 1 : 0.75
+                opacity: option.chosen ? 1 : option.problem !== "" ? 0.4 : 0.75
                 font.family: root.bar.fontFamily
                 font.pixelSize: Style.font.bodySmall
               }
@@ -592,9 +643,9 @@ Panel {
                 visible: text !== ""
                 wrapMode: Text.Wrap
                 textFormat: Text.PlainText
-                text: String(option.modelData.description || "")
-                color: root.bar.foreground
-                opacity: 0.5
+                text: option.problem !== "" ? option.problem : String(option.modelData.description || "")
+                color: option.problem !== "" ? root.bar.urgent : root.bar.foreground
+                opacity: option.problem !== "" ? 0.8 : 0.5
                 font.family: root.bar.fontFamily
                 font.pixelSize: Style.font.caption
               }
@@ -615,7 +666,7 @@ Panel {
               id: optionMouse
               anchors.fill: parent
               hoverEnabled: true
-              cursorShape: Qt.PointingHandCursor
+              cursorShape: option.problem !== "" ? Qt.ArrowCursor : Qt.PointingHandCursor
               onContainsMouseChanged: if (containsMouse) root.pointAt(option.key)
               onClicked: root.chooseAction(row.appClass, option.value)
             }
