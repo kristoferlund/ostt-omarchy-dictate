@@ -209,29 +209,12 @@ app's action and screenshot, changing only that line of `dictate.toml`.
 | `actions/` | The processing actions the setup adds to OSTT |
 | `install`, `uninstall` | Link the scripts into `~/.local/bin` and list OSTT in Omarchy's dictation menu, or undo that |
 
-## Development
-
-Install from your checkout:
-
-```bash
-git clone https://github.com/kristoferlund/ostt-omarchy-dictate.git
-cd ostt-omarchy-dictate
-omarchy plugin add "$PWD" --enable
-```
-
-Run the checks before opening a pull request:
-
-```bash
-omarchy plugin validate .
-python -m unittest discover -s tests
-shellcheck -x bin/* install uninstall lib/*.sh
-```
-
 ## Contributing
 
-Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for
-guidelines and [CHANGELOG.md](CHANGELOG.md) for release history. Report
-security issues privately as described in [SECURITY.md](SECURITY.md).
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the
+development setup, the checks to run before a pull request, and guidelines,
+and [CHANGELOG.md](CHANGELOG.md) for release history. Report security issues
+privately as described in [SECURITY.md](SECURITY.md).
 
 ## License
 
