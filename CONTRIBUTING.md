@@ -51,6 +51,11 @@ It cannot run the plugin inside `omarchy-shell` or record from a microphone, so
 also try your change with a real dictation: plain, with a processing action,
 and cancelled.
 
+Text shown in the widget or card goes in `i18n/en.json` and is read with
+`strings.t("key")`. Translations of it are welcome in the other catalogs, or
+as a new `i18n/<code>.json` for any language code Omarchy lists; a missing
+string falls back to English. `tests/test_i18n.py` checks that the keys match.
+
 Parsing belongs in `lib/`, where it can be tested. If you change how
 `dictate.toml` or OSTT's errors are read, add a test case in `tests/` with the
 input that triggered the change.

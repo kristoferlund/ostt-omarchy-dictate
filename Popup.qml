@@ -104,9 +104,9 @@ Item {
       onConfirmClicked: Quickshell.execDetached(["ostt-dictate", "stop"])
 
       opacity: root.opened ? 1 : 0
-      scale: root.opened ? 1 : 0.94
+      scale: root.opened ? 1 : 0.96
       Behavior on opacity { NumberAnimation { duration: Style.duration(180); easing.type: Easing.OutCubic } }
-      Behavior on scale { NumberAnimation { duration: Style.duration(220); easing.type: Easing.OutBack } }
+      Behavior on scale { NumberAnimation { duration: Style.duration(220); easing.type: Easing.Bezier; easing.bezierCurve: Style.easeOut } }
     }
   }
 }
