@@ -59,6 +59,10 @@ Panel {
   // mouse never scrolls the card under itself.
   property bool cursorFromKeyboard: false
 
+  // The card's and tooltip's text, in the language picked under
+  // Setup > Language. Messages from OSTT and ostt-dictate stay English.
+  Commons.Translations { id: strings; directory: Qt.resolvedUrl("i18n") }
+
   visible: needsSetup || (phase !== "" && !(hideWhenIdle && !busy && !errorFresh))
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
@@ -101,10 +105,11 @@ Panel {
     try {
       data = JSON.parse(String(text))
     } catch (e) {
-      root.appsError = "Could not list apps."
+      root.appsError = strings.t("apps.listFailed")
       return
     }
-    var options = [{ value: "", label: "Plain transcription", description: "No processing, your words as heard", images: false, error: "" }]
+    // Plain transcription is named where it is shown, so it follows the language.
+    var options = [{ value: "", label: "", description: "", images: false, error: "" }]
     var actions = data.actions || []
     for (var i = 0; i < actions.length; i++)
       options.push({
@@ -151,6 +156,7 @@ Panel {
   }
 
   function actionLabel(action) {
+    if (action === "") return strings.t("action.plain")
     for (var i = 0; i < root.actionOptions.length; i++)
       if (root.actionOptions[i].value === action) return root.actionOptions[i].label
     return action
@@ -301,7 +307,7 @@ Panel {
     id: mapProc
     stderr: StdioCollector { id: mapErr; waitForEnd: true }
     onExited: function(exitCode) {
-      root.mapError = exitCode === 0 ? "" : String(mapErr.text || "Could not save the change.").trim()
+      root.mapError = exitCode === 0 ? "" : String(mapErr.text || strings.t("apps.saveFailed")).trim()
       appsProc.running = true
     }
   }
@@ -331,11 +337,11 @@ Panel {
     active: root.phase === "recording" || (root.phase === "error" && root.errorFresh)
     dimmed: root.phase === "idle" || (root.phase === "error" && !root.errorFresh)
     tooltipText: {
-      if (root.needsSetup) return "OSTT dictation is not set up yet. Click to set it up."
-      if (root.phase === "recording") return "OSTT is recording. Click to paste, right-click to cancel."
-      if (root.phase === "transcribing") return "OSTT is transcribing. Right-click to cancel."
-      if (root.phase === "error") return "OSTT dictation failed:\n" + root.errorText
-      return "OSTT dictation. Click to start, right-click to choose actions per app."
+      if (root.needsSetup) return strings.t("tooltip.setup")
+      if (root.phase === "recording") return strings.t("tooltip.recording")
+      if (root.phase === "transcribing") return strings.t("tooltip.transcribing")
+      if (root.phase === "error") return strings.t("tooltip.failed").arg(root.errorText)
+      return strings.t("tooltip.idle")
     }
     onPressed: function(b) {
       if (root.needsSetup) {
@@ -391,11 +397,11 @@ Panel {
 
           PanelHero {
             width: parent.width
-            title: "Dictation"
-            meta: root.phase === "recording" ? "Recording…"
-              : root.phase === "transcribing" ? "Transcribing…"
-              : root.phase === "error" ? "Last dictation failed: " + root.errorText
-              : "Ready"
+            title: strings.t("card.title")
+            meta: root.phase === "recording" ? strings.t("card.recording")
+              : root.phase === "transcribing" ? strings.t("card.transcribing")
+              : root.phase === "error" ? strings.t("card.failed").arg(root.errorText)
+              : strings.t("card.ready")
             foreground: root.bar.foreground
             fontFamily: root.bar.fontFamily
             // The OSTT wordmark, as in the terminal app; text, so it takes the
@@ -420,7 +426,7 @@ Panel {
             spacing: Style.space(4)
 
             PanelSectionHeader {
-              text: "APPS"
+              text: strings.t("apps.header")
               foreground: root.bar.foreground
               fontFamily: root.bar.fontFamily
             }
@@ -432,9 +438,9 @@ Panel {
               textFormat: Text.PlainText
               readonly property string error: root.mapError !== "" ? root.mapError : root.appsError
               text: error !== "" ? error
-                : !root.appsLoaded ? "Loading…"
-                : root.apps.length === 0 ? "No apps are open on the visible workspaces."
-                : "What dictation does in each app. Apps not listed get plain transcription."
+                : !root.appsLoaded ? strings.t("apps.loading")
+                : root.apps.length === 0 ? strings.t("apps.none")
+                : strings.t("apps.hint")
               color: error !== "" ? root.bar.urgent : root.bar.foreground
               opacity: error !== "" ? 1 : 0.6
               font.family: root.bar.fontFamily
@@ -575,7 +581,7 @@ Panel {
           width: Math.min(implicitWidth, header.width * 0.5)
           elide: Text.ElideRight
           textFormat: Text.PlainText
-          text: row.action !== "" ? root.actionLabel(row.action) : "Plain transcription"
+          text: root.actionLabel(row.action)
           color: root.bar.foreground
           opacity: row.action !== "" ? 0.9 : 0.5
           font.family: root.bar.fontFamily
@@ -615,7 +621,7 @@ Panel {
 
         PanelSectionHeader {
           leftPadding: Style.space(6)
-          text: "ACTION"
+          text: strings.t("action.header")
           foreground: root.bar.foreground
           fontFamily: root.bar.fontFamily
         }
@@ -651,7 +657,7 @@ Panel {
                 width: parent.width
                 elide: Text.ElideRight
                 textFormat: Text.PlainText
-                text: String(option.modelData.label)
+                text: root.actionLabel(option.value)
                 color: root.bar.foreground
                 opacity: option.chosen ? 1 : option.problem !== "" ? 0.4 : 0.75
                 font.family: root.bar.fontFamily
@@ -662,7 +668,9 @@ Panel {
                 visible: text !== ""
                 wrapMode: Text.Wrap
                 textFormat: Text.PlainText
-                text: option.problem !== "" ? option.problem : String(option.modelData.description || "")
+                text: option.problem !== "" ? option.problem
+                  : option.value === "" ? strings.t("action.plainDescription")
+                  : String(option.modelData.description || "")
                 color: option.problem !== "" ? root.bar.urgent : root.bar.foreground
                 opacity: option.problem !== "" ? 0.8 : 0.5
                 font.family: root.bar.fontFamily
@@ -701,7 +709,7 @@ Panel {
 
         PanelSectionHeader {
           leftPadding: Style.space(6)
-          text: "SCREEN CONTEXT"
+          text: strings.t("screenshot.header")
           foreground: root.bar.foreground
           fontFamily: root.bar.fontFamily
         }
@@ -716,10 +724,10 @@ Panel {
           onHasCursorChanged: if (hasCursor && root.cursorFromKeyboard) root.reveal(shot)
           onHovered: function(isHovered) { if (isHovered) root.pointAt(key) }
           opacity: enabled ? 1 : 0.4
-          label: "Send a screenshot"
-          description: row.action === "" ? "Choose an action first."
-            : !takesImages ? "This action's agent takes no images."
-            : "The action also sees the window as it is when dictation starts."
+          label: strings.t("screenshot.label")
+          description: row.action === "" ? strings.t("screenshot.chooseAction")
+            : !takesImages ? strings.t("screenshot.noImages")
+            : strings.t("screenshot.description")
           checked: row.screenshot
           foreground: root.bar.foreground
           fontFamily: root.bar.fontFamily
