@@ -206,7 +206,7 @@ app's action and screenshot, changing only that line of `dictate.toml`.
 | `Popup.qml`, `Pill.qml` | The recording popup |
 | `Widget.qml` | The bar widget and the per-app card |
 | `lib/` | `dictate.toml` handling and OSTT error messages |
-| `i18n/` | The widget's and card's text in English, Simplified Chinese, Mexican Spanish and Brazilian Portuguese; other languages fall back to English |
+| `i18n/` | The widget's and card's text in English, Simplified Chinese, Mexican Spanish, Brazilian Portuguese, German and Russian; other languages fall back to English |
 | `actions/` | The processing actions the setup adds to OSTT |
 | `install`, `uninstall` | Link the scripts into `~/.local/bin` and list OSTT in Omarchy's dictation menu, or undo that |
 
