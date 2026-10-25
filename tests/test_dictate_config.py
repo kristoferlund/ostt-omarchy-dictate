@@ -57,6 +57,29 @@ class Edit(unittest.TestCase):
             dc.edit("[apps\n", "Slack", ENTRY)
 
 
+class EditPauseMedia(unittest.TestCase):
+    """pause_media is a top-level key: it must go before the first table, or
+    TOML would read it as an app under [apps]."""
+
+    def test_adds_it_before_the_first_table(self):
+        text = '# mine\n[apps]\n"foot" = { action = "clean" }\n'
+        self.assertEqual(dc.edit_pause_media(text, False),
+                         '# mine\npause_media = false\n\n[apps]\n"foot" = { action = "clean" }\n')
+
+    def test_replaces_it_in_place(self):
+        text = 'pause_media = true # mine\n\n[apps]\n'
+        self.assertEqual(dc.edit_pause_media(text, False), 'pause_media = false\n\n[apps]\n')
+
+    def test_leaves_a_pause_media_app_alone(self):
+        text = '[apps]\npause_media = { action = "clean" }\n'
+        result = dc.edit_pause_media(text, False)
+        self.assertEqual(tomllib.loads(result),
+                         {"pause_media": False, "apps": {"pause_media": {"action": "clean"}}})
+
+    def test_writes_an_empty_file(self):
+        self.assertEqual(dc.edit_pause_media("", True), "pause_media = true\n")
+
+
 class Read(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.TemporaryDirectory()
@@ -71,14 +94,14 @@ class Read(unittest.TestCase):
 
     def test_a_malformed_entry_affects_only_its_app(self):
         self.write('[apps]\nSlack = { action = "ghostwriter", screenshot = true }\nOld = "ghostwriter"\n')
-        self.assertEqual(dc.apps(self.path), {"apps": {"Slack": ENTRY}, "invalid": ["Old"]})
+        self.assertEqual(dc.apps(self.path), {"apps": {"Slack": ENTRY}, "invalid": ["Old"], "pause_media": True})
         self.assertEqual(dc.lookup(self.path, "Slack"), ENTRY)
         self.assertEqual(dc.lookup(self.path, "Firefox"), {})
         with self.assertRaisesRegex(dc.ConfigError, "Old"):
             dc.lookup(self.path, "Old")
 
     def test_a_missing_file_has_no_apps(self):
-        self.assertEqual(dc.apps(self.path), {"apps": {}, "invalid": []})
+        self.assertEqual(dc.apps(self.path), {"apps": {}, "invalid": [], "pause_media": True})
 
     def test_screenshot_defaults_to_off(self):
         self.write('[apps]\nfoot = { action = "clean" }\n')
@@ -92,6 +115,21 @@ class Read(unittest.TestCase):
             self.assertEqual(tomllib.load(f)["apps"]["Slack"], ENTRY)
         self.assertEqual(os.stat(self.path).st_mode & 0o777, 0o640)
         self.assertEqual(os.listdir(self.dir.name), ["dictate.toml"])
+
+    def test_pause_media_is_on_unless_set_to_false(self):
+        self.assertIs(dc.pause_media({}), True)
+        self.assertIs(dc.pause_media({"pause_media": False}), False)
+        # Not valid: reported by apps, and dictation still pauses.
+        self.write('pause_media = "no"\n')
+        self.assertIsNone(dc.apps(self.path)["pause_media"])
+
+    def test_pause_media_switch_keeps_the_apps(self):
+        self.write('[apps]\nfoot = { action = "clean" }\n')
+        dc.main(["pause-media", self.path, "off"])
+        with open(self.path, "rb") as f:
+            self.assertEqual(tomllib.load(f), {"pause_media": False, "apps": {"foot": {"action": "clean"}}})
+        with self.assertRaises(dc.ConfigError):
+            dc.main(["pause-media", self.path, "maybe"])
 
     def test_map_refuses_an_option_as_the_action_or_no_class(self):
         with self.assertRaises(dc.ConfigError):

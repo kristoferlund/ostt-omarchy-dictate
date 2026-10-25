@@ -69,6 +69,12 @@ pill fades out once the text is pasted. It takes its colors from your theme,
 and never takes keyboard focus, so the text lands in the app you were typing
 in.
 
+Music and videos that are playing pause while you record, and play on when
+you stop or cancel; players you had paused stay paused. Turn this off with the
+switch at the bottom of the widget's app list, or with `pause_media = false` at
+the top of `~/.config/ostt/dictate.toml`. It works with players that support
+MPRIS, which most do.
+
 A failed transcription keeps the recording, and the notification tells you how
 to retry it. If only the processing action fails, OSTT pastes your words as
 heard and the notification says why.
@@ -148,7 +154,8 @@ the notification works.
 
 Left-click starts dictation, or stops it and pastes into the focused app.
 Right-click cancels a recording or a pending transcription; otherwise it opens
-the list of apps with their processing action and screenshot setting.
+the list of apps with their processing action and screenshot setting, and the
+switch for pausing media while recording.
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
@@ -186,6 +193,7 @@ ostt-dictate status [--json] [--follow]
 ostt-dictate levels
 ostt-dictate apps
 ostt-dictate map <class> [<action> [--screenshot]]
+ostt-dictate pause-media [on|off]
 ```
 
 Each command returns at once; recording and transcription run in the
@@ -196,6 +204,7 @@ ffmpeg's `RMS_level` lines in dBFS, for the popup's meter. `apps` prints, as
 JSON, OSTT's processing actions and the apps on the visible workspaces or in
 `dictate.toml` with their settings, for the card; `map` sets or clears one
 app's action and screenshot, changing only that line of `dictate.toml`.
+`pause-media` shows or sets whether recording pauses media players.
 
 ## How It Fits Together
 

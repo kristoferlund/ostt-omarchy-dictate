@@ -1,8 +1,12 @@
-"""Reads and edits the [apps] table of dictate.toml for ostt-dictate.
+"""Reads and edits dictate.toml for ostt-dictate: the [apps] table, and
+pause_media, which is true unless set to false.
 
-    dictate_config.py apps <config>              JSON {"apps": {class: entry}, "invalid": [class]}
+    dictate_config.py apps <config>              JSON {"apps": {class: entry}, "invalid": [class],
+                                                 "pause_media": bool or null if not valid}
     dictate_config.py lookup <config> <class>    JSON entry of one app, or {} if it has none
     dictate_config.py map <config> <class> [<action> [--screenshot]]
+    dictate_config.py pause-media <config>       true or false; true if not valid
+    dictate_config.py pause-media <config> on|off
 
 An entry is {"action": str, "screenshot": bool}. Errors are printed as one
 line on stderr with exit status 1.
@@ -44,15 +48,22 @@ def entry(value):
     return None
 
 
+def pause_media(document):
+    """Whether dictation pauses media players, or None if the value is not valid."""
+    value = document.get("pause_media", True)
+    return value if isinstance(value, bool) else None
+
+
 def apps(path):
     """Every app's entry; a malformed entry affects only its own app."""
+    document = load(path)
     valid, invalid = {}, []
-    for app, value in load(path).get("apps", {}).items():
+    for app, value in document.get("apps", {}).items():
         if (parsed := entry(value)) is not None:
             valid[app] = parsed
         else:
             invalid.append(app)
-    return {"apps": valid, "invalid": invalid}
+    return {"apps": valid, "invalid": invalid, "pause_media": pause_media(document)}
 
 
 def lookup(path, app):
@@ -123,16 +134,44 @@ def edit(text, app, new_entry):
     return result
 
 
-def map_app(path, app, action, screenshot):
-    """Sets or clears one app's entry, replacing the file in one rename."""
+def edit_pause_media(text, value):
+    """`text` with its top-level pause_media line replaced, or added before
+    the first table. Refused, like edit(), unless only that value changes."""
+    try:
+        before = tomllib.loads(text)
+    except tomllib.TOMLDecodeError as e:
+        raise ConfigError(f"not valid TOML: {e}") from e
+    newline = "\r\n" if "\r\n" in text else "\n"
+    lines = text.splitlines()
+    line = f"pause_media = {'true' if value else 'false'}"
+    first_table = next((i for i, text_line in enumerate(lines) if text_line.lstrip().startswith("[")), len(lines))
+    current = next((i for i in range(first_table) if _key_of(lines[i]) == "pause_media"), None)
+    if current is not None:
+        lines[current] = line
+    elif first_table < len(lines):
+        lines[first_table:first_table] = [line, ""]
+    else:
+        lines.append(line)
+    result = newline.join(lines) + newline
+
+    try:
+        after = tomllib.loads(result)
+    except tomllib.TOMLDecodeError:
+        after = None
+    if after != {**before, "pause_media": value}:
+        raise ConfigError("could not change pause_media safely; edit it by hand")
+    return result
+
+
+def change(path, edit_text):
+    """Applies edit_text to the file, replacing it in one rename."""
     try:
         with open(path, newline="") as f:
             text = f.read()
     except FileNotFoundError:
         text = ""
-    new_entry = {"action": action, "screenshot": screenshot} if action else None
     try:
-        result = edit(text, app, new_entry)
+        result = edit_text(text)
     except ConfigError as e:
         raise ConfigError(f"{path}: {e}") from e
     target = os.path.realpath(path)
@@ -147,6 +186,12 @@ def map_app(path, app, action, screenshot):
     except BaseException:
         os.unlink(tmp)
         raise
+
+
+def map_app(path, app, action, screenshot):
+    """Sets or clears one app's entry."""
+    new_entry = {"action": action, "screenshot": screenshot} if action else None
+    change(path, lambda text: edit(text, app, new_entry))
 
 
 def main(args):
@@ -165,6 +210,12 @@ def main(args):
             map_app(path, app, action, True)
         case ["map", *_]:
             raise ConfigError("Usage: ostt-dictate map <class> [<action> [--screenshot]]")
+        case ["pause-media", path]:
+            print(json.dumps(pause_media(load(path)) is not False))
+        case ["pause-media", path, ("on" | "off") as value]:
+            change(path, lambda text: edit_pause_media(text, value == "on"))
+        case ["pause-media", *_]:
+            raise ConfigError("Usage: ostt-dictate pause-media [on|off]")
         case _:
             raise ConfigError("Usage: dictate_config.py apps|lookup|map ... (see its docstring)")
 

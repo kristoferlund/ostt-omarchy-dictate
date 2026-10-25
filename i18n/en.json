@@ -22,5 +22,7 @@
   "screenshot.label": "Send a screenshot",
   "screenshot.chooseAction": "Choose an action first.",
   "screenshot.noImages": "This action's agent takes no images.",
-  "screenshot.description": "The action also sees the window as it is when dictation starts."
+  "screenshot.description": "The action also sees the window as it is when dictation starts.",
+  "media.label": "Pause media while recording",
+  "media.description": "Music and videos that are playing pause while you speak, and play on when you stop."
 }
