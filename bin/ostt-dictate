@@ -176,6 +176,10 @@ start() {
 
 stop() {
   recording || return 0
+  # Transcribing from before the recorder stops, so status never reports
+  # idle in between and closes the popup: this process stands in for the
+  # worker until it starts.
+  echo $$ >"$worker_pid"
   stop_recorder
   setsid "$0" __transcribe </dev/null >/dev/null 2>&1 8>&- &
   echo $! >"$worker_pid"
