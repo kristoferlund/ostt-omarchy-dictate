@@ -22,5 +22,7 @@
   "screenshot.label": "Enviar una captura de pantalla",
   "screenshot.chooseAction": "Primero elige una acción.",
   "screenshot.noImages": "El agente de esta acción no acepta imágenes.",
-  "screenshot.description": "La acción también ve la ventana tal como está al empezar el dictado."
+  "screenshot.description": "La acción también ve la ventana tal como está al empezar el dictado.",
+  "media.label": "Pausar multimedia al grabar",
+  "media.description": "La música y los videos que se reproducen se pausan mientras hablas y siguen cuando terminas."
 }

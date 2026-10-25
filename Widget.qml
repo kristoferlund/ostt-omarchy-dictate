@@ -43,6 +43,8 @@ Panel {
   // The first list has arrived; until then the card says it is loading.
   property bool appsLoaded: false
   property string appsError: ""
+  // Whether recording pauses the media players that are playing.
+  property bool pauseMedia: true
   // A change that could not be saved; kept until the next one succeeds, as
   // reloading the list afterwards would otherwise hide it.
   property string mapError: ""
@@ -132,6 +134,7 @@ Panel {
       apps.push({ "class": root.expandedClass, action: "", screenshot: false })
     root.apps = apps
     root.appsError = String(data.error || "")
+    root.pauseMedia = data.pauseMedia !== false
     root.appsLoaded = true
   }
 
@@ -189,8 +192,14 @@ Panel {
     root.setApp(appClass, app.action, app.screenshot !== true)
   }
 
+  function togglePauseMedia() {
+    if (root.changing) return
+    mapProc.command = ["ostt-dictate", "pause-media", root.pauseMedia ? "off" : "on"]
+    mapProc.running = true
+  }
+
   // Keyboard navigation: every row, then the options and the switch of the
-  // expanded one.
+  // expanded one, then the media switch.
   function navKey(kind, appClass, value) {
     return [kind, appClass, value || ""].join("\u001f")
   }
@@ -205,6 +214,7 @@ Panel {
         keys.push(root.navKey("option", appClass, root.actionOptions[j].value))
       keys.push(root.navKey("screenshot", appClass))
     }
+    keys.push(root.navKey("pauseMedia"))
     return keys
   }
 
@@ -229,6 +239,7 @@ Panel {
     if (parts[0] === "row") root.toggleRow(parts[1])
     else if (parts[0] === "option") root.chooseAction(parts[1], parts[2])
     else if (parts[0] === "screenshot") root.toggleScreenshot(parts[1])
+    else if (parts[0] === "pauseMedia") root.togglePauseMedia()
   }
 
   // Scrolls the card so the item under the cursor is in view.
@@ -451,6 +462,26 @@ Panel {
               model: root.apps
               delegate: AppRow {}
             }
+          }
+
+          PanelSeparator {
+            foreground: root.bar.foreground
+          }
+
+          Toggle {
+            id: media
+            readonly property string key: root.navKey("pauseMedia")
+            width: parent.width
+            hasCursor: root.cursorActive && root.cursorKey === key
+            onHasCursorChanged: if (hasCursor && root.cursorFromKeyboard) root.reveal(media)
+            onHovered: function(isHovered) { if (isHovered) root.pointAt(key) }
+            label: strings.t("media.label")
+            description: strings.t("media.description")
+            checked: root.pauseMedia
+            foreground: root.bar.foreground
+            fontFamily: root.bar.fontFamily
+            titleSize: Style.font.bodySmall
+            onClicked: root.togglePauseMedia()
           }
         }
       }

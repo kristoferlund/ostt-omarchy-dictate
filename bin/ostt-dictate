@@ -11,10 +11,14 @@
 #   ostt-dictate start | stop | toggle | cancel
 #   ostt-dictate status [--json] [--follow]
 #   ostt-dictate levels   follow the input level while recording
-#   ostt-dictate apps     JSON: processing actions, and the apps on visible
-#                         workspaces or in the config, with their settings
+#   ostt-dictate apps     JSON: processing actions, the apps on visible
+#                         workspaces or in the config with their settings,
+#                         and pauseMedia
 #   ostt-dictate map <class> [<action> [--screenshot]]
 #                         set an app's action; no action clears it
+#   ostt-dictate pause-media [on|off]
+#                         whether recording pauses media players; on unless
+#                         pause_media = false in the config
 
 set -u
 
@@ -26,6 +30,7 @@ error_file="$dir/error"
 levels="$dir/levels"
 context="$dir/context.jpg"
 action_file="$dir/action"
+paused="$dir/paused"
 config="${XDG_CONFIG_HOME:-$HOME/.config}/ostt/dictate.toml"
 
 mkdir -p "$dir" && chmod 700 "$dir"
@@ -74,11 +79,38 @@ state() {
 
 # Press and release of a hold key arrive almost together; take turns. The
 # wait is longer than start can take (its steps' time limits, a notification
-# included, add up to 18 seconds), so a release is never lost while the
+# included, add up to 20 seconds), so a release is never lost while the
 # recording goes on.
 lock() {
   exec 8>"$dir/lock"
-  flock -w 20 8 || fail "Dictation is busy; try again."
+  flock -w 25 8 || fail "Dictation is busy; try again."
+}
+
+mpris() {
+  busctl --user --timeout=1 "$1" "$2" /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player "${@:3}" 2>/dev/null
+}
+
+# Pauses the media players (MPRIS) that are playing, unless the config says
+# pause_media = false, and notes them so only those resume. playerctld only
+# mirrors other players.
+pause_media() {
+  : >"$paused"
+  [[ ! -f $config || $(config_tool pause-media "$config" 2>/dev/null) != false ]] || return 0
+  local player
+  for player in $(busctl --user list --acquired --no-legend 2>/dev/null |
+    awk '$1 ~ /^org\.mpris\.MediaPlayer2\./ && $1 !~ /playerctld/ { print $1 }'); do
+    [[ $(mpris get-property "$player" PlaybackStatus) == 's "Playing"' ]] || continue
+    mpris call "$player" Pause && printf '%s\n' "$player" >>"$paused"
+  done
+}
+
+resume_media() {
+  local player
+  [[ -f $paused ]] || return 0
+  while read -r player; do
+    mpris call "$player" Play
+  done <"$paused"
+  rm -f "$paused"
 }
 
 # Looks up the focused app in the config. A listed app gets its action, and a
@@ -167,8 +199,10 @@ start() {
     rm -f "$recorder_pid"
     fail "Could not start the microphone: $(tail -n1 "$dir/recorder.log")"
   fi
-  # After the microphone starts, so the first word isn't lost; before the
-  # popup appears, though it never takes focus anyway.
+  # After the microphone starts, so the first word isn't lost. Each player
+  # gets a second, and all of them two.
+  timeout 2 "$0" __pause-media
+  # Before the popup appears, though it never takes focus anyway.
   pick_action
   # Show the recording popup when the Omarchy shell is running.
   omarchy-shell -q shell summon io.github.kristoferlund.ostt-dictate '{}' </dev/null >/dev/null 2>&1 8>&- &
@@ -181,6 +215,7 @@ stop() {
   # worker until it starts.
   echo $$ >"$worker_pid"
   stop_recorder
+  timeout 2 "$0" __resume-media
   setsid "$0" __transcribe </dev/null >/dev/null 2>&1 8>&- &
   echo $! >"$worker_pid"
 }
@@ -188,6 +223,7 @@ stop() {
 cancel() {
   if recording; then
     stop_recorder
+    timeout 2 "$0" __resume-media
     rm -f "$audio"
   elif transcribing; then
     kill -TERM -- "-$(cat "$worker_pid")" 2>/dev/null
@@ -228,7 +264,7 @@ transcribe() {
 }
 
 apps() {
-  local clients workspaces mapped invalid actions error=""
+  local clients workspaces mapped invalid actions error="" pause=true
   clients=$(hyprctl clients -j 2>/dev/null) || clients='[]'
   workspaces=$(hyprctl monitors -j 2>/dev/null | jq '[.[].activeWorkspace.id]') || workspaces='[]'
   if [[ ! -f $config ]]; then
@@ -236,6 +272,10 @@ apps() {
   elif mapped=$(config_tool apps "$config" 2>&1); then
     invalid=$(jq -r '.invalid | join(", ")' <<<"$mapped")
     [[ $invalid ]] && error="Not valid in $config, so dictated without context: $invalid"
+    pause=$(jq '.pause_media != false' <<<"$mapped")
+    if [[ ! $error ]] && jq -e '.pause_media == null' <<<"$mapped" >/dev/null; then
+      error="pause_media in $config must be true or false; media is paused until it is."
+    fi
     mapped=$(jq '.apps' <<<"$mapped")
   else
     error=${mapped:-Could not read $config.}
@@ -246,11 +286,12 @@ apps() {
     actions='[]'
   fi
   jq -n --argjson clients "$clients" --argjson workspaces "$workspaces" \
-    --argjson mapped "$mapped" --argjson actions "$actions" --arg error "$error" '
+    --argjson mapped "$mapped" --argjson actions "$actions" --arg error "$error" \
+    --argjson pause "$pause" '
     ($clients
       | map(select(.class != "" and (.workspace.id as $id | $workspaces | index($id))))
       | map(.class) | unique) as $visible
-    | {error: $error, actions: $actions,
+    | {error: $error, actions: $actions, pauseMedia: $pause,
        apps: ($visible + ($mapped | keys - $visible)
          | map({class: ., action: ($mapped[.].action // ""), screenshot: ($mapped[.].screenshot // false)}))}'
 }
@@ -293,6 +334,9 @@ case "${1:-}" in
   levels) exec tail -n0 -F "$levels" 2>/dev/null ;;
   apps) apps ;;
   map) shift; config_tool map "$config" "$@" ;;
+  pause-media) shift; config_tool pause-media "$config" "$@" ;;
   __transcribe) transcribe ;;
-  *) echo "Usage: ostt-dictate <start|stop|toggle|cancel|status [--json] [--follow]|levels|apps|map <class> [<action> [--screenshot]]>" >&2; exit 1 ;;
+  __pause-media) pause_media ;;
+  __resume-media) resume_media ;;
+  *) echo "Usage: ostt-dictate <start|stop|toggle|cancel|status [--json] [--follow]|levels|apps|map <class> [<action> [--screenshot]]|pause-media [on|off]>" >&2; exit 1 ;;
 esac

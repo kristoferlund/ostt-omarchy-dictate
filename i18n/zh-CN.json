@@ -22,5 +22,7 @@
   "screenshot.label": "发送截图",
   "screenshot.chooseAction": "请先选择一个操作。",
   "screenshot.noImages": "此操作的代理不接受图片。",
-  "screenshot.description": "该操作还会看到听写开始时的窗口画面。"
+  "screenshot.description": "该操作还会看到听写开始时的窗口画面。",
+  "media.label": "录音时暂停媒体",
+  "media.description": "说话时暂停正在播放的音乐和视频，结束后继续播放。"
 }

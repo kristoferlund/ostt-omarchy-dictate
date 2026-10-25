@@ -22,5 +22,7 @@
   "screenshot.label": "Screenshot senden",
   "screenshot.chooseAction": "Wähle zuerst eine Aktion.",
   "screenshot.noImages": "Der Agent dieser Aktion nimmt keine Bilder an.",
-  "screenshot.description": "Die Aktion sieht auch das Fenster so, wie es beim Start des Diktats aussieht."
+  "screenshot.description": "Die Aktion sieht auch das Fenster so, wie es beim Start des Diktats aussieht.",
+  "media.label": "Medien während der Aufnahme pausieren",
+  "media.description": "Laufende Musik und Videos pausieren, während du sprichst, und laufen weiter, wenn du aufhörst."
 }
