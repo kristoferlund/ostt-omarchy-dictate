@@ -125,7 +125,10 @@ screenshot's path in `$OSTT_ATTACHMENT`.
 ### Agents and Screenshots
 
 The setup offers the agents OSTT knows how to run with their tools switched
-off, so text on screen can't make them run commands or touch files. The card
+off, so text on screen can't make them run commands or touch files, and that
+read your words from stdin, where other users on the computer can't see them:
+every built-in agent but GitHub Copilot. [Agents](https://ostt.ai/reference/agents)
+describes how each one runs. The card
 offers the screenshot only for actions that can use it, and an app set by hand
 to send one to an action that cannot is dictated without it, with a
 notification. If something is wrong with an app's entry, or the screenshot
