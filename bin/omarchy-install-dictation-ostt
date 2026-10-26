@@ -34,6 +34,10 @@ plugin_config="$config_home/ostt/dictate.toml"
 # How messages name the config, e.g. ~/.config/ostt/ostt.toml.
 shown_config=${ostt_config/#$HOME/\~}
 
+# True for the agent list of an OSTT that says which agents take the prompt as
+# a command-line argument (0.0.32 and later).
+current_agents='all(.[]; has("prompt_in_args") or has("error"))'
+
 has_action() {
   ostt process list --format json 2>/dev/null | jq -e --arg id "$1" 'any(.[]; .id == $id)' >/dev/null
 }
@@ -76,13 +80,16 @@ setup_context() {
   # Agents come from OSTT, which knows how to run each one with its tools off.
   agents=$(stdout_or_stderr ostt agent list --format json)
   status=$?
-  if (( status == 2 )); then
+  if (( status == 2 )) || { (( status == 0 )) && ! jq -e "$current_agents" <<<"$agents" >/dev/null; }; then
     step "Context-aware dictation needs a newer OSTT, so it was skipped. Update OSTT and run this setup again to add it."
     return 0
   elif (( status != 0 )); then
     step "Context-aware dictation was not set up: $(ostt_error "$agents" "OSTT could not list its agents.")"
     return 0
   fi
+  # Only agents that read the prompt from stdin: other local users can read a
+  # prompt passed as a command-line argument while the agent runs.
+  agents=$(jq '[.[] | select(.prompt_in_args | not)]' <<<"$agents")
   if ! actions=$(stdout_or_stderr ostt process list --format json); then
     step "Context-aware dictation was not set up: $(ostt_error "$actions" "OSTT could not read $shown_config.")"
     return 0
@@ -206,11 +213,12 @@ if omarchy-cmd-missing ostt; then
     exit 0
   fi
 else
-  # OSTT before 0.0.31 has no agents, which context-aware dictation needs:
-  # `ostt agent` is a usage error (2) there.
+  # Context-aware dictation needs OSTT 0.0.32: before 0.0.31 `ostt agent` is a
+  # usage error (2), and 0.0.31 does not say which agents take the prompt as
+  # an argument (prompt_in_args).
   status=0
-  ostt agent list >/dev/null 2>&1 || status=$?
-  if (( status == 2 )); then
+  agents=$(ostt agent list --format json 2>/dev/null) || status=$?
+  if (( status == 2 )) || { (( status == 0 )) && ! jq -e "$current_agents" <<<"$agents" >/dev/null; }; then
     version=$(ostt --version 2>/dev/null)
     # The OSTT packages conflict with each other, so another one has to be
     # removed before $package can go in.
@@ -229,8 +237,8 @@ else
       replaced+=("${copy/#$HOME/\~}")
     fi
     if (( ${#replaced[@]} == 0 )); then
-      step "Your OSTT (${version#ostt }) is older than 0.0.31, which context-aware dictation needs. Run 'omarchy update' to update it, then run this setup again to add context-aware dictation."
-    elif confirm "Your OSTT (${version#ostt }) is older than 0.0.31, which context-aware dictation needs. Replace ${replaced[0]}${replaced[1]:+ and ${replaced[1]}} with $package from the AUR? It updates with Omarchy."; then
+      step "Your OSTT (${version#ostt }) is older than 0.0.32, which context-aware dictation needs. Run 'omarchy update' to update it, then run this setup again to add context-aware dictation."
+    elif confirm "Your OSTT (${version#ostt }) is older than 0.0.32, which context-aware dictation needs. Replace ${replaced[0]}${replaced[1]:+ and ${replaced[1]}} with $package from the AUR? It updates with Omarchy."; then
       if [[ $installed && $installed != "$package" ]]; then
         omarchy-pkg-drop "$installed"
       fi
@@ -246,7 +254,7 @@ else
         systemctl --user restart ostt-daemon
       fi
     else
-      step "Context-aware dictation needs OSTT 0.0.31 or later. To add it later, update OSTT and run this setup again."
+      step "Context-aware dictation needs OSTT 0.0.32 or later. To add it later, update OSTT and run this setup again."
     fi
     echo
   fi
