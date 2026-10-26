@@ -1,5 +1,7 @@
 # OSTT Dictation for Omarchy
 
+![OSTT Dictation: the bar card choosing an action per app (plain transcription, Text cleanup or Ghostwriter), with the screenshot and media pause switches, above the recording pill](preview.png)
+
 Make [OSTT](https://ostt.ai) the dictation tool behind Omarchy's own dictation
 keys. Hold Right Alt or F9 and speak; OSTT transcribes on your own machine, or
 with a cloud model if you prefer, and pastes the text into the app you are
