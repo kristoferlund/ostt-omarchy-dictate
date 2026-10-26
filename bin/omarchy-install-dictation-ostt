@@ -212,22 +212,41 @@ else
   ostt agent list >/dev/null 2>&1 || status=$?
   if (( status == 2 )); then
     version=$(ostt --version 2>/dev/null)
-    found=$(command -v ostt)
-    # The OSTT packages conflict with each other, so with one installed the
-    # update has to come through it, even when the ostt found first is not it.
-    installed=$(pacman -Qq ostt ostt-bin ostt-cuda-bin ostt-vulkan-bin 2>/dev/null | head -n 1)
-    if [[ $installed ]] && ! pacman -Qqo "$found" >/dev/null 2>&1; then
-      found=${found/#$HOME/\~}
-      step "OSTT is installed twice: the $installed package, and $found, which is found first. $found is OSTT ${version#ostt }, older than 0.0.31, which context-aware dictation needs. Remove $found and run 'omarchy update' to update $installed, then run this setup again to add context-aware dictation."
-    elif [[ $installed ]]; then
+    # The OSTT packages conflict with each other, so another one has to be
+    # removed before $package can go in.
+    installed=$(pacman -Qqo /usr/bin/ostt 2>/dev/null) || installed=""
+    # OSTT's install script puts ostt in ~/.local/bin, which can come before
+    # /usr/bin on PATH, so that copy has to go for the package to take over.
+    copy=$(command -v ostt)
+    if pacman -Qqo "$copy" >/dev/null 2>&1; then
+      copy=""
+    fi
+    replaced=()
+    if [[ $installed && $installed != "$package" ]]; then
+      replaced+=("the $installed package")
+    fi
+    if [[ $copy ]]; then
+      replaced+=("${copy/#$HOME/\~}")
+    fi
+    if (( ${#replaced[@]} == 0 )); then
       step "Your OSTT (${version#ostt }) is older than 0.0.31, which context-aware dictation needs. Run 'omarchy update' to update it, then run this setup again to add context-aware dictation."
-    # A package's ostt comes before ~/.local/bin, where OSTT's install script
-    # puts it, on the session's PATH, so the package takes over.
-    elif confirm "Your OSTT (${version#ostt }, from OSTT's install script) is older than 0.0.31, which context-aware dictation needs. Install $package from the AUR instead? It takes over from this one and updates with Omarchy."; then
+    elif confirm "Your OSTT (${version#ostt }) is older than 0.0.31, which context-aware dictation needs. Replace ${replaced[0]}${replaced[1]:+ and ${replaced[1]}} with $package from the AUR? It updates with Omarchy."; then
+      if [[ $installed && $installed != "$package" ]]; then
+        omarchy-pkg-drop "$installed"
+      fi
       omarchy-pkg-aur-add "$package"
+      if [[ $copy ]]; then
+        rm -f "$copy"
+      fi
       hash -r
+      # The daemon's service runs the ostt it was installed from, which may
+      # be gone now, and an already running daemon is still the old version.
+      if ostt daemon status 2>/dev/null | grep -q "Service: installed"; then
+        ostt daemon install >/dev/null
+        systemctl --user restart ostt-daemon
+      fi
     else
-      step "Context-aware dictation needs OSTT 0.0.31 or later. To add it later, run OSTT's install script again to update OSTT, then run this setup again."
+      step "Context-aware dictation needs OSTT 0.0.31 or later. To add it later, update OSTT and run this setup again."
     fi
     echo
   fi
