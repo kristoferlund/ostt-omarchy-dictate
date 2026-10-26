@@ -83,6 +83,9 @@ setup_context() {
     step "Context-aware dictation was not set up: $(ostt_error "$agents" "OSTT could not list its agents.")"
     return 0
   fi
+  # Only agents that read the prompt from stdin: other local users can read a
+  # prompt passed as a command-line argument while the agent runs.
+  agents=$(jq '[.[] | select(.prompt_in_args | not)]' <<<"$agents")
   if ! actions=$(stdout_or_stderr ostt process list --format json); then
     step "Context-aware dictation was not set up: $(ostt_error "$actions" "OSTT could not read $shown_config.")"
     return 0

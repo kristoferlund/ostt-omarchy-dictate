@@ -26,7 +26,7 @@ already use, reads the window and writes the reply.
 
 - Omarchy 4.5 or later
 - OSTT 0.0.31 or later for context-aware dictation; the setup installs OSTT if it is missing
-- For context-aware dictation, an agent CLI you are signed in to; `ostt agent list` shows which ones OSTT can run
+- For context-aware dictation, an agent CLI you are signed in to that reads the prompt from stdin, so other users on the computer cannot see your words: Claude Code, Codex, OpenCode, Gemini CLI and others, but not GitHub Copilot, Grok or Cursor. `ostt agent list` shows them
 
 ## Install
 
