@@ -212,7 +212,14 @@ else
   ostt agent list >/dev/null 2>&1 || status=$?
   if (( status == 2 )); then
     version=$(ostt --version 2>/dev/null)
-    if pacman -Qqo "$(command -v ostt)" >/dev/null 2>&1; then
+    found=$(command -v ostt)
+    # The OSTT packages conflict with each other, so with one installed the
+    # update has to come through it, even when the ostt found first is not it.
+    installed=$(pacman -Qq ostt ostt-bin ostt-cuda-bin ostt-vulkan-bin 2>/dev/null | head -n 1)
+    if [[ $installed ]] && ! pacman -Qqo "$found" >/dev/null 2>&1; then
+      found=${found/#$HOME/\~}
+      step "OSTT is installed twice: the $installed package, and $found, which is found first. $found is OSTT ${version#ostt }, older than 0.0.31, which context-aware dictation needs. Remove $found and run 'omarchy update' to update $installed, then run this setup again to add context-aware dictation."
+    elif [[ $installed ]]; then
       step "Your OSTT (${version#ostt }) is older than 0.0.31, which context-aware dictation needs. Run 'omarchy update' to update it, then run this setup again to add context-aware dictation."
     # A package's ostt comes before ~/.local/bin, where OSTT's install script
     # puts it, on the session's PATH, so the package takes over.
