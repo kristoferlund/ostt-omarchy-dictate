@@ -7,6 +7,8 @@ pause_media, which is true unless set to false.
     dictate_config.py map <config> <class> [<action> [--screenshot]]
     dictate_config.py pause-media <config>       true or false; true if not valid
     dictate_config.py pause-media <config> on|off
+    dictate_config.py action-tool <ostt.toml> <action>
+                                                 the agent an action of ostt.toml runs on, or nothing
 
 An entry is {"action": str, "screenshot": bool}. Errors are printed as one
 line on stderr with exit status 1.
@@ -74,6 +76,14 @@ def lookup(path, app):
     if (parsed := entry(value)) is None:
         raise ConfigError(f"The entry for {app} in {path} is not valid; it must look like {EXAMPLE}")
     return parsed
+
+
+def action_tool(path, action):
+    """The agent ostt.toml's [process.actions.<action>] runs on, or "" if none."""
+    value = load(path)
+    for key in ("process", "actions", action, "tool"):
+        value = value.get(key) if isinstance(value, dict) else None
+    return value if isinstance(value, str) else ""
 
 
 def _key_of(line):
@@ -214,6 +224,8 @@ def main(args):
             print(json.dumps(pause_media(load(path)) is not False))
         case ["pause-media", path, ("on" | "off") as value]:
             change(path, lambda text: edit_pause_media(text, value == "on"))
+        case ["action-tool", path, action]:
+            print(action_tool(path, action))
         case ["pause-media", *_]:
             raise ConfigError("Usage: ostt-dictate pause-media [on|off]")
         case _:

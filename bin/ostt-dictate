@@ -32,6 +32,7 @@ context="$dir/context.jpg"
 action_file="$dir/action"
 paused="$dir/paused"
 config="${XDG_CONFIG_HOME:-$HOME/.config}/ostt/dictate.toml"
+ostt_config="${XDG_CONFIG_HOME:-$HOME/.config}/ostt/ostt.toml"
 
 mkdir -p "$dir" && chmod 700 "$dir"
 
@@ -120,7 +121,7 @@ resume_media() {
 # release waits for it.
 pick_action() {
   [[ -f $config ]] || return 0
-  local win class app action actions found
+  local win class app action actions found tool agents
   win=$(timeout 2 hyprctl activewindow -j 2>/dev/null) || return 0
   class=$(jq -r '.class // empty' <<<"$win" 2>/dev/null)
   [[ $class ]] || return 0
@@ -147,6 +148,18 @@ pick_action() {
   if jq -e '.error' <<<"$found" >/dev/null; then
     notify "Dictating without context" "$(jq -r '.error' <<<"$found")"
     return 0
+  fi
+  # An agent that takes the prompt as a command-line argument, like GitHub
+  # Copilot, shows your words to other users on the computer: never run one.
+  if tool=$(config_tool action-tool "$ostt_config" "$action" 2>/dev/null) && [[ $tool ]]; then
+    if ! agents=$(stdout_or_stderr timeout 3 ostt agent list --format json); then
+      notify "Dictating without context" "$(ostt_error "$agents" "Could not list OSTT's agents.")"
+      return 0
+    fi
+    if jq -e --arg id "$tool" 'any(.[]; .id == $id and .prompt_in_args)' <<<"$agents" >/dev/null; then
+      notify "Dictating without context" "'$action' runs on $tool, which gets your words as a command-line argument, where other users on this computer can see them. Give it another agent in ostt.toml."
+      return 0
+    fi
   fi
   if jq -e '.screenshot' <<<"$app" >/dev/null; then
     if ! jq -e '.images' <<<"$found" >/dev/null; then
