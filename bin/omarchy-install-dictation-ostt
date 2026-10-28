@@ -76,7 +76,7 @@ fill_action() {
 # Never stops the rest of the setup: it is called in a condition, and each step
 # checks for failure.
 setup_context() {
-  local agents actions status missing=() existing=() tool name path models model candidate target id added
+  local agents actions status missing=() existing=() unsafe=() in_args tool name path models model candidate target id added
   # Agents come from OSTT, which knows how to run each one with its tools off.
   agents=$(stdout_or_stderr ostt agent list --format json)
   status=$?
@@ -89,6 +89,7 @@ setup_context() {
   fi
   # Only agents that read the prompt from stdin: other local users can read a
   # prompt passed as a command-line argument while the agent runs.
+  in_args=$(jq '[.[] | select(.prompt_in_args) | .id]' <<<"$agents")
   agents=$(jq '[.[] | select(.prompt_in_args | not)]' <<<"$agents")
   if ! actions=$(stdout_or_stderr ostt process list --format json); then
     step "Context-aware dictation was not set up: $(ostt_error "$actions" "OSTT could not read $shown_config.")"
@@ -97,6 +98,12 @@ setup_context() {
   for id in ghostwriter clean; do
     if jq -e --arg id "$id" 'any(.[]; .id == $id)' <<<"$actions" >/dev/null; then
       existing+=("$id")
+      # ostt-dictate does not run an action on such an agent.
+      tool=$(python3 "$repo/lib/dictate_config.py" action-tool "$ostt_config" "$id" 2>/dev/null)
+      if [[ $tool ]] && jq -e --arg id "$tool" 'index($id)' <<<"$in_args" >/dev/null; then
+        unsafe+=("$id")
+        step "Your '$id' action runs on $tool, which gets your words as a command-line argument, where other users on this computer can see them, so dictation does not use it. Give it another agent in $shown_config, or delete it and run this setup again."
+      fi
     else
       missing+=("$id")
     fi
@@ -184,6 +191,7 @@ setup_context() {
   (( ${#missing[@]} == 1 )) && them=it
   step "Added $added to $shown_config. To choose the apps that use $them, right-click OSTT's microphone in the bar."
   for id in "${existing[@]}"; do
+    [[ " ${unsafe[*]} " == *" $id "* ]] && continue
     say "The setup uses the '$id' action you already had, as it is."
   done
 }

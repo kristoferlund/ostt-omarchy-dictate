@@ -4,7 +4,7 @@ All notable changes to OSTT Dictation for Omarchy are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in `manifest.json` matches the latest release.
 
-## [Unreleased]
+## [0.1.0] - 2026-10-28
 
 Initial release.
 
@@ -17,6 +17,7 @@ Initial release.
 - A bar widget that shows whether OSTT is recording or transcribing, with a card for choosing each app's processing action and whether it gets a screenshot of the window.
 - The widget and card follow the language picked under Setup > Language, in English, Simplified Chinese, Spanish, Brazilian Portuguese, German and Russian.
 - Ghostwriter and Text cleanup processing actions, added to OSTT with the agent and model you choose.
+- Actions on an agent that takes the prompt as a command-line argument, such as GitHub Copilot, are never run, since other users on the computer could read your words there. Apps set to one are dictated without it, with a notification.
 - `ostt-dictate`, the recorder behind the keys, popup and widget, with `status --json --follow` for other tools.
 
-[Unreleased]: https://github.com/kristoferlund/ostt-omarchy-dictate/commits/main
+[0.1.0]: https://github.com/kristoferlund/ostt-omarchy-dictate/releases/tag/v0.1.0

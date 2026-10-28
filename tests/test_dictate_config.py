@@ -138,5 +138,33 @@ class Read(unittest.TestCase):
             dc.main(["map", self.path, "", "clean"])
 
 
+
+class ActionTool(unittest.TestCase):
+    """ostt-dictate must find the agent of an action an earlier setup made, so
+    it can refuse one that takes the prompt as a command-line argument."""
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.path = os.path.join(self.dir.name, "ostt.toml")
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def test_finds_the_agent_of_a_generated_action(self):
+        with open(self.path, "w") as f:
+            f.write('[process.actions.clean]\ntype = "ai"\ntool = "copilot"\nmodel = "gpt-5"\n')
+        self.assertEqual(dc.action_tool(self.path, "clean"), "copilot")
+
+    def test_no_agent_for_other_actions_or_shapes(self):
+        with open(self.path, "w") as f:
+            f.write('process = 1\n')
+        self.assertEqual(dc.action_tool(self.path, "clean"), "")
+        with open(self.path, "w") as f:
+            f.write('[process.actions.api]\ntype = "ai"\nmodel = "x"\n')
+        self.assertEqual(dc.action_tool(self.path, "api"), "")
+        self.assertEqual(dc.action_tool(self.path, "missing"), "")
+        self.assertEqual(dc.action_tool(os.path.join(self.dir.name, "none.toml"), "clean"), "")
+
+
 if __name__ == "__main__":
     unittest.main()
