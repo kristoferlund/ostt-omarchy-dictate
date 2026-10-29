@@ -4,6 +4,18 @@ All notable changes to OSTT Dictation for Omarchy are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in `manifest.json` matches the latest release.
 
+## [0.1.1] - 2026-10-29
+
+### Changed
+
+- Requires OSTT 0.0.33, which keeps your dictation history, recordings, logs and API keys readable only by you. The setup offers to update an older OSTT.
+
+### Fixed
+
+- An action with no agent of its own that runs on GitHub Copilot through OSTT's `default_tool` is no longer run, as Copilot gets your words as a command-line argument.
+- Without `XDG_RUNTIME_DIR`, dictation keeps the recording and screenshot in a folder under `/tmp` only if it is yours and not a link, so another user cannot read or swap it.
+- Opening the widget's card no longer passes the titles of your windows in command-line arguments, where other users could read them.
+
 ## [0.1.0] - 2026-10-28
 
 Initial release.
