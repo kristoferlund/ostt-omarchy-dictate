@@ -128,7 +128,7 @@ resume_media() {
 # release waits for it.
 pick_action() {
   [[ -f $config ]] || return 0
-  local win class app action actions found tool agents
+  local win class app action actions found
   win=$(timeout 2 hyprctl activewindow -j 2>/dev/null) || return 0
   class=$(jq -r '.class // empty' <<<"$win" 2>/dev/null)
   [[ $class ]] || return 0
