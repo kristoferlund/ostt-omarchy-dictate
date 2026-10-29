@@ -180,8 +180,6 @@ def change(path, edit_text):
     try:
         with os.fdopen(fd, "w", newline="") as f:
             f.write(result)
-        if os.path.exists(target):
-            os.chmod(tmp, os.stat(target).st_mode & 0o777)
         os.replace(tmp, target)
     except BaseException:
         os.unlink(tmp)

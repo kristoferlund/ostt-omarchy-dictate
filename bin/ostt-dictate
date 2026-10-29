@@ -21,6 +21,8 @@
 #                         pause_media = false in the config
 
 set -u
+# Recordings, screenshots and errors are readable only by you.
+umask 077
 
 dir="${XDG_RUNTIME_DIR:-/tmp/ostt-dictate-$UID}/ostt-dictate"
 audio="$dir/recording.wav"

@@ -34,7 +34,7 @@ plugin_config="$config_home/ostt/dictate.toml"
 # How messages name the config, e.g. ~/.config/ostt/ostt.toml.
 shown_config=${ostt_config/#$HOME/\~}
 
-# True if OSTT is 0.0.33 or later: it keeps the history and recordings
+# True if OSTT is 0.0.34 or later: it keeps the history and recordings
 # private to you, and says which actions run on an agent that takes the
 # prompt as a command-line argument.
 ostt_current() {
@@ -42,7 +42,7 @@ ostt_current() {
   version=$(ostt --version 2>/dev/null) || return 1
   version=${version#ostt }
   version=${version%%-*}
-  [[ $(printf '%s\n' 0.0.33 "$version" | sort -V | head -n 1) == 0.0.33 ]]
+  [[ $(printf '%s\n' 0.0.34 "$version" | sort -V | head -n 1) == 0.0.34 ]]
 }
 
 has_action() {
@@ -52,7 +52,7 @@ has_action() {
 # Writes dictate.toml, where the user lists the apps that use context.
 write_plugin_config() {
   [[ -e $plugin_config ]] && return 0
-  cat >"$plugin_config" <<'EOF'
+  (umask 077 && cat >"$plugin_config") <<'EOF'
 # Apps whose dictation goes through a processing action (see ostt.toml). With
 # screenshot = true, a screenshot of the window is sent along with your words.
 # Right-click the bar widget to choose these, or edit them here. Keys are
@@ -178,8 +178,8 @@ setup_context() {
   # Replace the file the config resolves to in one rename, so it is never half
   # written and a symlinked config (dotfiles) stays a symlink.
   target=$(realpath "$ostt_config")
-  if ! { cp "$candidate/ostt/ostt.toml" "$target.new" &&
-    chmod --reference="$target" "$target.new" &&
+  # It can hold API keys, so only its owner can read it.
+  if ! { rm -f "$target.new" && (umask 077 && cp "$candidate/ostt/ostt.toml" "$target.new") &&
     mv "$target.new" "$target"; }; then
     rm -f "$target.new"
     rm -rf "$candidate"
@@ -244,8 +244,8 @@ else
       replaced+=("${copy/#$HOME/\~}")
     fi
     if (( ${#replaced[@]} == 0 )); then
-      step "Your OSTT (${version#ostt }) is older than 0.0.33, which keeps your dictations private and which context-aware dictation needs. Run 'omarchy update' to update it, then run this setup again to add context-aware dictation."
-    elif confirm "Your OSTT (${version#ostt }) is older than 0.0.33, which keeps your dictations private and which context-aware dictation needs. Replace ${replaced[0]}${replaced[1]:+ and ${replaced[1]}} with $package from the AUR? It updates with Omarchy."; then
+      step "Your OSTT (${version#ostt }) is older than 0.0.34, which keeps your dictations private and which context-aware dictation needs. Run 'omarchy update' to update it, then run this setup again to add context-aware dictation."
+    elif confirm "Your OSTT (${version#ostt }) is older than 0.0.34, which keeps your dictations private and which context-aware dictation needs. Replace ${replaced[0]}${replaced[1]:+ and ${replaced[1]}} with $package from the AUR? It updates with Omarchy."; then
       if [[ $installed && $installed != "$package" ]]; then
         omarchy-pkg-drop "$installed"
       fi
@@ -261,7 +261,7 @@ else
         systemctl --user restart ostt-daemon
       fi
     else
-      step "Context-aware dictation needs OSTT 0.0.33 or later. To add it later, update OSTT and run this setup again."
+      step "Context-aware dictation needs OSTT 0.0.34 or later. To add it later, update OSTT and run this setup again."
     fi
     echo
   fi

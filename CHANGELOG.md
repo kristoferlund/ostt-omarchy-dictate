@@ -4,6 +4,16 @@ All notable changes to OSTT Dictation for Omarchy are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in `manifest.json` matches the latest release.
 
+## [Unreleased]
+
+### Changed
+
+- Requires OSTT 0.0.34, which makes everything it saves readable only by you from the moment it starts, including custom model URLs, which can be signed download links.
+
+### Fixed
+
+- The recording, screenshot and other files dictation keeps while it works, `dictate.toml`, and the `ostt.toml` the setup writes are readable only by you, whatever your umask.
+
 ## [0.1.2] - 2026-10-29
 
 ### Changed
