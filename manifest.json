@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.kristoferlund.ostt-dictate",
   "name": "OSTT Dictation",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "author": "Kristofer Lund",
   "description": "Recording popup, bar status and Omarchy dictation backend for OSTT",
   "kinds": ["bar-widget", "panel"],
