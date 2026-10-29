@@ -3,7 +3,7 @@ pause_media, which is true unless set to false.
 
     dictate_config.py apps <config>              JSON {"apps": {class: entry}, "invalid": [class],
                                                  "pause_media": bool or null if not valid}
-    dictate_config.py lookup <config> <class>    JSON entry of one app, or {} if it has none
+    dictate_config.py lookup <config>            JSON entry of the class on stdin, or {}
     dictate_config.py map <config> <class> [<action> [--screenshot]]
     dictate_config.py pause-media <config>       true or false; true if not valid
     dictate_config.py pause-media <config> on|off
@@ -198,8 +198,9 @@ def main(args):
     match args:
         case ["apps", path]:
             print(json.dumps(apps(path)))
-        case ["lookup", path, app]:
-            print(json.dumps(lookup(path, app)))
+        case ["lookup", path]:
+            # The app comes on stdin, out of sight of other users.
+            print(json.dumps(lookup(path, sys.stdin.read().rstrip("\n"))))
         case ["map", path, app]:
             map_app(path, app, "", False)
         case ["map", path, app, action] if not action.startswith("-"):
