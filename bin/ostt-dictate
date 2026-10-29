@@ -150,7 +150,7 @@ pick_action() {
   # `prompt_in_args` came with OSTT 0.0.33, which also keeps the history and
   # recordings private to you.
   if ! jq -e 'has("prompt_in_args")' <<<"$found" >/dev/null; then
-    notify "Dictating without context" "Context-aware dictation needs a newer OSTT."
+    notify "Dictating without context" "Context-aware dictation needs OSTT 0.0.33 or later. Run 'omarchy update', or the dictation setup if your OSTT is not from the AUR."
     return 0
   fi
   if jq -e '.error' <<<"$found" >/dev/null; then

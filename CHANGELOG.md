@@ -4,6 +4,12 @@ All notable changes to OSTT Dictation for Omarchy are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in `manifest.json` matches the latest release.
 
+## [Unreleased]
+
+### Changed
+
+- The notification for an OSTT too old for context-aware dictation says how to update it.
+
 ## [0.1.1] - 2026-10-29
 
 ### Changed
