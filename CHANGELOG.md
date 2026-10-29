@@ -32,4 +32,5 @@ Initial release.
 - Actions on an agent that takes the prompt as a command-line argument, such as GitHub Copilot, are never run, since other users on the computer could read your words there. Apps set to one are dictated without it, with a notification.
 - `ostt-dictate`, the recorder behind the keys, popup and widget, with `status --json --follow` for other tools.
 
+[0.1.1]: https://github.com/kristoferlund/ostt-omarchy-dictate/releases/tag/v0.1.1
 [0.1.0]: https://github.com/kristoferlund/ostt-omarchy-dictate/releases/tag/v0.1.0
