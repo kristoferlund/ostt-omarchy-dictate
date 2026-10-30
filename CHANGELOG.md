@@ -4,7 +4,7 @@ All notable changes to OSTT Dictation for Omarchy are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The version in `manifest.json` matches the latest release.
 
-## [Unreleased]
+## [0.1.3] - 2026-10-30
 
 ### Changed
 
@@ -50,6 +50,7 @@ Initial release.
 - Actions on an agent that takes the prompt as a command-line argument, such as GitHub Copilot, are never run, since other users on the computer could read your words there. Apps set to one are dictated without it, with a notification.
 - `ostt-dictate`, the recorder behind the keys, popup and widget, with `status --json --follow` for other tools.
 
+[0.1.3]: https://github.com/kristoferlund/ostt-omarchy-dictate/releases/tag/v0.1.3
 [0.1.2]: https://github.com/kristoferlund/ostt-omarchy-dictate/releases/tag/v0.1.2
 [0.1.1]: https://github.com/kristoferlund/ostt-omarchy-dictate/releases/tag/v0.1.1
 [0.1.0]: https://github.com/kristoferlund/ostt-omarchy-dictate/releases/tag/v0.1.0
