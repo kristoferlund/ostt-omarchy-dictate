@@ -107,13 +107,15 @@ class Read(unittest.TestCase):
         self.write('[apps]\nfoot = { action = "clean" }\n')
         self.assertEqual(dc.lookup(self.path, "foot"), {"action": "clean", "screenshot": False})
 
-    def test_map_writes_atomically_and_keeps_the_mode(self):
+    # Which apps send screenshots to an agent is the user's own business, even
+    # in a file an older setup left readable by others.
+    def test_map_writes_atomically_and_privately(self):
         self.write('[apps]\n')
-        os.chmod(self.path, 0o640)
+        os.chmod(self.path, 0o644)
         dc.map_app(self.path, "Slack", "ghostwriter", True)
         with open(self.path, "rb") as f:
             self.assertEqual(tomllib.load(f)["apps"]["Slack"], ENTRY)
-        self.assertEqual(os.stat(self.path).st_mode & 0o777, 0o640)
+        self.assertEqual(os.stat(self.path).st_mode & 0o777, 0o600)
         self.assertEqual(os.listdir(self.dir.name), ["dictate.toml"])
 
     def test_pause_media_is_on_unless_set_to_false(self):

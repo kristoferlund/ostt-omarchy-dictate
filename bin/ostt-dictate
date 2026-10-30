@@ -21,6 +21,8 @@
 #                         pause_media = false in the config
 
 set -u
+# Recordings, screenshots and errors are readable only by you.
+umask 077
 
 dir="${XDG_RUNTIME_DIR:-/tmp/ostt-dictate-$UID}/ostt-dictate"
 audio="$dir/recording.wav"
@@ -47,9 +49,16 @@ notify() {
   timeout 2 notify-send -a OSTT -i audio-input-microphone "$1" "$2" 2>/dev/null || true
 }
 
+# notify-send gets its text as arguments, which other users on the computer
+# can read, so an error from OSTT goes there as its first line only: below it,
+# a config error quotes the line it is on, which can hold an API key.
+first_line() {
+  printf '%s' "${1%%$'\n'*}"
+}
+
 fail() {
   echo "ostt-dictate: $1" >&2
-  notify "Dictation failed" "$1"
+  notify "Dictation failed" "$(first_line "$1")"
   exit 1
 }
 
@@ -132,19 +141,20 @@ pick_action() {
   win=$(timeout 2 hyprctl activewindow -j 2>/dev/null) || return 0
   class=$(jq -r '.class // empty' <<<"$win" 2>/dev/null)
   [[ $class ]] || return 0
-  if ! app=$(config_tool lookup "$config" "$class" 2>&1); then
-    notify "Dictating without context" "${app:-Could not read $config.}"
+  # The app goes on stdin: in arguments, other users could see what you use.
+  if ! app=$(config_tool lookup "$config" <<<"$class" 2>&1); then
+    notify "Dictating without context" "$(first_line "${app:-Could not read $config.}")"
     return 0
   fi
   action=$(jq -r '.action // empty' <<<"$app")
   [[ $action ]] || return 0
   if ! actions=$(stdout_or_stderr timeout 3 ostt process list --format json); then
-    notify "Dictating without context" "$(ostt_error "$actions" "Could not list OSTT's processing actions.")"
+    notify "Dictating without context" "$(first_line "$(ostt_error "$actions" "Could not list OSTT's processing actions.")")"
     return 0
   fi
   found=$(jq -c --arg id "$action" 'first(.[] | select(.id == $id)) // empty' <<<"$actions")
   if [[ ! $found ]]; then
-    notify "Dictating without context" "$class is set to '$action', which is not a processing action in ostt.toml."
+    notify "Dictating without context" "This app is set to '$action', which is not a processing action in ostt.toml."
     return 0
   fi
   # `prompt_in_args` came with OSTT 0.0.33, which also keeps the history and
@@ -154,7 +164,7 @@ pick_action() {
     return 0
   fi
   if jq -e '.error' <<<"$found" >/dev/null; then
-    notify "Dictating without context" "$(jq -r '.error' <<<"$found")"
+    notify "Dictating without context" "$(first_line "$(jq -r '.error' <<<"$found")")"
     return 0
   fi
   # An agent that takes the prompt as a command-line argument, like GitHub
@@ -169,7 +179,7 @@ pick_action() {
     elif ! timeout 5 grim -t jpeg -q 60 -g "$(jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"' <<<"$win")" "$context" 2>/dev/null; then
       # JPEG at 60% keeps small text legible at a fraction of the PNG size.
       rm -f "$context"
-      notify "Dictating without context" "Could not take a screenshot of $class."
+      notify "Dictating without context" "Could not take a screenshot of the window."
       return 0
     fi
   fi
@@ -266,13 +276,13 @@ transcribe() {
       local again="ostt process 1 $action"
       [[ -f $context ]] && again+=" --attach $context"
       notify "Processing failed, pasted as heard" \
-        "$(ostt_error "$error" | sed 1d)"$'\n'"To process again: $again"
+        "$(first_line "$(ostt_error "$error" | sed 1d)")"$'\n'"To process again: $again"
       ;;
     # Keep the files for a retry.
     *)
       error=$(ostt_error "$error" "Transcription failed.")
       printf '%s\n' "$error" >"$error_file"
-      notify "Dictation failed" "$error"$'\n'"Retry with: ostt transcribe $audio ${args[*]}"
+      notify "Dictation failed" "$(first_line "$error")"$'\n'"Retry with: ostt transcribe $audio ${args[*]}"
       ;;
   esac
   rm -f "$worker_pid" "$action_file"
